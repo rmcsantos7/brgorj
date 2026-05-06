@@ -70,28 +70,36 @@ export const gerarExcelRecargasPeriodo = (dados) => {
     ['Cliente', dados.cliente?.nome_fantasia || dados.cliente?.razao_social || ''],
     ['CNPJ', formatarCNPJ(dados.cliente?.cnpj)],
     ['Período', `${formatarData(dados.periodo.inicio)} a ${formatarData(dados.periodo.fim)}`],
-    ['Total de Recargas', dados.total_recargas],
-    ['Valor Total', numero(dados.valor_total)],
+    [],
+    ['Resumo'],
+    ['Total de Recargas', dados.total_recargas || 0],
+    ['Efetuadas', dados.total_efetuadas || 0, numero(dados.valor_efetuado)],
+    ['Canceladas', dados.total_canceladas || 0, numero(dados.valor_cancelado)],
+    ['Pendentes', dados.total_pendentes || 0, numero(dados.valor_pendente)],
+    ['Valor Efetuado (canceladas excluídas)', '', numero(dados.valor_efetuado)],
     ['Emitido em', new Date().toLocaleString('pt-BR')],
     []
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(meta);
 
-  const header = ['Remessa', 'Data da Recarga', 'Valor da Recarga'];
+  const header = ['Remessa', 'Data da Recarga', 'Vencimento', 'Pagamento', 'Status', 'Valor'];
   const body = (dados.remessas || []).map(r => ({
     'Remessa': `#${r.remessa_id}`,
     'Data da Recarga': formatarData(r.data_recarga),
-    'Valor da Recarga': numero(r.valor_recarga)
+    'Vencimento': r.data_vencimento ? formatarData(r.data_vencimento) : '',
+    'Pagamento': r.data_pagamento ? formatarData(r.data_pagamento) : '',
+    'Status': r.status_label || '',
+    'Valor': numero(r.valor_recarga)
   }));
 
   XLSX.utils.sheet_add_aoa(ws, [header], { origin: `A${meta.length + 1}` });
   XLSX.utils.sheet_add_json(ws, body, { origin: `A${meta.length + 2}`, skipHeader: true });
 
-  const totalRow = [['', 'TOTAL', numero(dados.valor_total)]];
+  const totalRow = [['', '', '', '', 'TOTAL EFETUADO', numero(dados.valor_efetuado)]];
   XLSX.utils.sheet_add_aoa(ws, totalRow, { origin: `A${meta.length + 2 + body.length}` });
 
-  ws['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 20 }];
+  ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Recargas');
   XLSX.writeFile(wb, `Relatorio_Recargas_${dados.periodo.inicio}_a_${dados.periodo.fim}.xlsx`);
 };

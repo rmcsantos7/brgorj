@@ -189,33 +189,31 @@ export const gerarPdfRecargasPeriodo = (dados) => {
   doc.setTextColor(...CORES.cinzaMedio);
   doc.text(`Data de Emissão: ${new Date().toLocaleString('pt-BR')}`, 20, y);
 
-  // Cards de resumo
+  // Cards de resumo: total, efetuado, cancelado, pendente
   y += 20;
-  const cardW = 160;
+  const cardW = 120;
   const cardH = 50;
   const cards = [
-    { label: 'Valor Total de Recargas', value: formatarMoeda(dados.valor_total), color: CORES.roxo },
-    { label: 'Período', value: `${formatarData(dados.periodo.inicio)} a ${formatarData(dados.periodo.fim)}`, color: CORES.cinzaEscuro },
-    { label: 'Recargas Realizadas', value: String(dados.total_recargas), color: CORES.rosa }
+    { label: 'Total de Recargas', value: String(dados.total_recargas || 0), color: CORES.cinzaEscuro },
+    { label: `Efetuadas (${dados.total_efetuadas || 0})`, value: formatarMoeda(dados.valor_efetuado), color: [21, 128, 61] },
+    { label: `Canceladas (${dados.total_canceladas || 0})`, value: formatarMoeda(dados.valor_cancelado), color: [185, 28, 28] },
+    { label: `Pendentes (${dados.total_pendentes || 0})`, value: formatarMoeda(dados.valor_pendente), color: [180, 83, 9] }
   ];
 
-  const cardGap = 12;
+  const cardGap = 10;
   const totalCardsWidth = cards.length * cardW + (cards.length - 1) * cardGap;
   let cardX = (doc.internal.pageSize.getWidth() - totalCardsWidth) / 2;
 
   cards.forEach(card => {
-    // Card background
     doc.setFillColor(...CORES.cinzaClaro);
     doc.roundedRect(cardX, y, cardW, cardH, 4, 4, 'F');
 
-    // Label
     doc.setFontSize(7);
     doc.setTextColor(...CORES.cinzaMedio);
     doc.setFont('helvetica', 'normal');
     doc.text(card.label.toUpperCase(), cardX + cardW / 2, y + 16, { align: 'center' });
 
-    // Value
-    doc.setFontSize(13);
+    doc.setFontSize(11);
     doc.setTextColor(...card.color);
     doc.setFont('helvetica', 'bold');
     doc.text(card.value, cardX + cardW / 2, y + 36, { align: 'center' });
@@ -223,23 +221,38 @@ export const gerarPdfRecargasPeriodo = (dados) => {
     cardX += cardW + cardGap;
   });
 
-  y += cardH + 25;
+  y += cardH + 12;
 
-  // Tabela
+  // Linha do período centralizada
+  doc.setFontSize(8);
+  doc.setTextColor(...CORES.cinzaMedio);
+  doc.setFont('helvetica', 'normal');
+  doc.text(
+    `Período: ${formatarData(dados.periodo.inicio)} a ${formatarData(dados.periodo.fim)}`,
+    doc.internal.pageSize.getWidth() / 2,
+    y,
+    { align: 'center' }
+  );
+  y += 14;
+
+  // Tabela detalhada com status, vencimento e data de pagamento
   if (dados.remessas && dados.remessas.length > 0) {
     doc.autoTable({
       startY: y,
-      head: [['Remessa', 'Data da Recarga', 'Valor da Recarga']],
+      head: [['Remessa', 'Data Recarga', 'Vencimento', 'Pagamento', 'Status', 'Valor']],
       body: dados.remessas.map(r => [
         `#${r.remessa_id}`,
         formatarData(r.data_recarga),
+        r.data_vencimento ? formatarData(r.data_vencimento) : '-',
+        r.data_pagamento ? formatarData(r.data_pagamento) : '-',
+        r.status_label || '-',
         formatarMoeda(r.valor_recarga)
       ]),
-      foot: [['', 'TOTAL', formatarMoeda(dados.valor_total)]],
+      foot: [['', '', '', '', 'EFETUADO', formatarMoeda(dados.valor_efetuado)]],
       theme: 'grid',
       styles: {
-        fontSize: 9,
-        cellPadding: 8,
+        fontSize: 8,
+        cellPadding: 6,
         lineColor: [229, 231, 235],
         lineWidth: 0.5,
       },
@@ -247,20 +260,23 @@ export const gerarPdfRecargasPeriodo = (dados) => {
         fillColor: CORES.roxo,
         textColor: CORES.branco,
         fontStyle: 'bold',
-        fontSize: 9,
+        fontSize: 8,
         halign: 'center'
       },
       footStyles: {
         fillColor: CORES.cinzaClaro,
         textColor: CORES.roxo,
         fontStyle: 'bold',
-        fontSize: 10,
+        fontSize: 9,
         halign: 'center'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 80 },
-        1: { halign: 'center', cellWidth: 180 },
-        2: { halign: 'right', cellWidth: 'auto' }
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'right' }
       },
       alternateRowStyles: {
         fillColor: [250, 250, 252]
