@@ -139,6 +139,26 @@ const listarRestaurantesDoUsuario = async (usrCodigo) => {
 };
 
 /**
+ * Lista todos os restaurantes (clientes) cadastrados.
+ * Usado como fallback para usuários Master (usr_administrador='S') que não
+ * estão vinculados a nenhum restaurante via fr_usuario_role.
+ */
+const listarTodosRestaurantes = async () => {
+  const sql = `
+    SELECT c.crd_cli_id, c.crd_cli_nome_fantasia, c.crd_cli_cnpj
+      FROM crd_cliente c
+     ORDER BY c.crd_cli_nome_fantasia ASC
+  `;
+  try {
+    const result = await db.query(sql);
+    return result.rows;
+  } catch (error) {
+    logger.error('Erro ao listar todos os restaurantes:', { error: error.message });
+    throw error;
+  }
+};
+
+/**
  * Busca um cliente pelo id (para validação de troca por admin)
  */
 const buscarClientePorId = async (clienteId) => {
@@ -248,6 +268,7 @@ module.exports = {
   buscarConfigSMTP,
   buscarConfigSMS,
   listarRestaurantesDoUsuario,
+  listarTodosRestaurantes,
   termosForamAceitos,
   registrarAceiteTermos,
   buscarClientePorId

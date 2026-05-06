@@ -189,6 +189,21 @@ const enviarCodigoPorEmail = async (usuario, codigo) => {
 };
 
 /**
+ * Lista os restaurantes efetivos do usuário.
+ * Para Master (usr_administrador='S') sem vínculo em fr_usuario_role,
+ * cai para todos os restaurantes — alinhado ao verificarClienteId, que já
+ * permite a admins acessar qualquer cliente.
+ */
+const obterRestaurantesDoUsuario = async (usuario) => {
+  const proprios = await authRepository.listarRestaurantesDoUsuario(usuario.usr_codigo);
+  if (proprios && proprios.length > 0) return proprios;
+  if (usuario.usr_administrador === 'S') {
+    return authRepository.listarTodosRestaurantes();
+  }
+  return [];
+};
+
+/**
  * Etapa 1 — valida login + senha e gera challenge_token de 2FA.
  */
 const login = async (loginUsuario, senha) => {
@@ -203,8 +218,9 @@ const login = async (loginUsuario, senha) => {
     const valido = verificarSenha(usuario, senha);
     if (!valido) throw new APIError('Usuário ou senha inválidos', 401);
 
-    // Confere se o usuário tem ao menos um restaurante vinculado antes de pedir 2FA
-    const restaurantes = await authRepository.listarRestaurantesDoUsuario(usuario.usr_codigo);
+    // Confere se o usuário tem ao menos um restaurante acessível antes de pedir 2FA
+    // (Masters sem vínculo enxergam todos os restaurantes)
+    const restaurantes = await obterRestaurantesDoUsuario(usuario);
     if (!restaurantes || restaurantes.length === 0) {
       throw new APIError('Nenhum restaurante vinculado a este usuário — contate o suporte', 403);
     }
@@ -317,7 +333,7 @@ const verificarCodigo2FA = async (challengeToken, codigo) => {
 
   const senhaTemporaria = usuario.usr_senha_temporaria === true || usuario.usr_senha_temporaria === 'S';
 
-  const restaurantes = await authRepository.listarRestaurantesDoUsuario(usuario.usr_codigo);
+  const restaurantes = await obterRestaurantesDoUsuario(usuario);
   if (!restaurantes || restaurantes.length === 0) {
     throw new APIError('Nenhum restaurante vinculado a este usuário — contate o suporte', 403);
   }
@@ -558,7 +574,9 @@ const listarClientes = async (usuario) => {
   if (!usrCodigo) throw new APIError('Usuário não autenticado', 401);
 
   try {
-    const restaurantes = await authRepository.listarRestaurantesDoUsuario(usrCodigo);
+    const usuarioDb = await authRepository.buscarUsuarioPorCodigo(usrCodigo);
+    if (!usuarioDb) throw new APIError('Usuário não encontrado', 404);
+    const restaurantes = await obterRestaurantesDoUsuario(usuarioDb);
     return ok(restaurantes.map(c => ({
       crd_cli_id: c.crd_cli_id,
       crd_cli_nome_fantasia: c.crd_cli_nome_fantasia,
@@ -584,16 +602,16 @@ const trocarCliente = async (usuario, novoClienteId) => {
   if (!usrCodigo) throw new APIError('Usuário não autenticado', 401);
 
   try {
-    // Restaurantes que esse usuário pode acessar
-    const restaurantes = await authRepository.listarRestaurantesDoUsuario(usrCodigo);
-    const cliente = restaurantes.find(r => r.crd_cli_id === parseInt(novoClienteId, 10));
-    if (!cliente) {
-      throw new APIError('Restaurante não vinculado a este usuário', 403);
-    }
-
     const usuarioDb = await authRepository.buscarUsuarioPorCodigo(usrCodigo);
     if (!usuarioDb) {
       throw new APIError('Usuário não encontrado', 404);
+    }
+
+    // Restaurantes que esse usuário pode acessar (Master sem vínculo → todos)
+    const restaurantes = await obterRestaurantesDoUsuario(usuarioDb);
+    const cliente = restaurantes.find(r => r.crd_cli_id === parseInt(novoClienteId, 10));
+    if (!cliente) {
+      throw new APIError('Restaurante não vinculado a este usuário', 403);
     }
 
     const token = jwt.sign(
