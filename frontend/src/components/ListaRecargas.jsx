@@ -61,11 +61,14 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
     setPage(0);
   };
 
-  // Categoriza a situação consolidada da remessa
+  // Categoriza a situação consolidada da remessa.
+  // Boleto pago vence sobre remessa cancelada — se o cliente pagou, a verdade é "Pago"
+  // mesmo que a remessa tenha sido marcada como 'C' (race com cron / cancelamento manual
+  // sem confirmação do EFI).
   const categoriaStatus = (r) => {
-    if (r.status === 'C') return 'cancelado';
     const s = (r.boleto_status || '').toLowerCase();
     if (s === 'paid' || s === 'settled') return 'pago';
+    if (r.status === 'C') return 'cancelado';
     if (s === 'canceled' || s === 'cancelled' || s === 'expired') return 'cancelado';
     if (s === 'waiting' || s === 'active' || s === 'pending') return 'pendente';
     if (!r.nota_fiscal_id) return 'cancelado';
@@ -259,7 +262,8 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                   const taxa = parseFloat(r.taxa) || 0;
                   const valorBruto = parseFloat(r.valor_bruto) || 0;
                   const valorLiquido = calcularLiquido(valorBruto, taxa);
-                  const cancelada = r.status === 'C';
+                  const boletoPago = ['paid', 'settled'].includes((r.boleto_status || '').toLowerCase());
+                  const cancelada = r.status === 'C' && !boletoPago;
                   const comErro = r.status === 'E';
 
                   return (
@@ -280,9 +284,12 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                       <td style={{ fontWeight: '500' }}>{formatarData(r.data_criacao)}</td>
                       <td style={{ textAlign: 'center' }}>
                         {(() => {
-                          // Prioridade: rem_status C/E > boleto_status > fallback
+                          // Prioridade: boleto pago > rem_status C/E > boleto_status > fallback
+                          // Se o boleto está pago, esse é o estado verdadeiro mesmo que a remessa
+                          // tenha sido marcada como 'C' por engano.
                           let st;
-                          if (cancelada) st = formatarStatus('canceled');
+                          if (boletoPago) st = formatarStatus(r.boleto_status);
+                          else if (cancelada) st = formatarStatus('canceled');
                           else if (comErro) st = { label: 'Erro no boleto', bg: '#fffbeb', color: '#b45309', border: '#fde68a' };
                           else st = formatarStatus(r.boleto_status);
                           if (!st) {
@@ -388,7 +395,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                                 <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                               </svg>
                             </a>
-                            {!cancelada && (
+                            {!cancelada && !boletoPago && (
                               <button
                                 title="Cancelar Remessa"
                                 onClick={() => setCancelModal(r)}

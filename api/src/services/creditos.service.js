@@ -431,9 +431,13 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let boletoStatus = null;
+  let boletoStatusConsultado = false;
   let boletoCancelado = false;
 
-  // 2. Se tem nota com boleto, verifica status
+  // 2. Se tem nota com boleto, verifica status no EFI
+  // A checagem é obrigatória — não dá pra cancelar uma remessa sem confirmar
+  // que o boleto não foi pago, senão corremos o risco de marcar como cancelada
+  // uma remessa cujo boleto foi quitado e ainda não sincronizou no DB.
   if (notaFiscal && notaFiscal.nota_fiscal_id) {
     try {
       const statusUrl = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscal.nota_fiscal_id}`;
@@ -442,13 +446,25 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
 
       if (statusResult.success && statusResult.data) {
         boletoStatus = statusResult.data.status;
+        boletoStatusConsultado = true;
         logger.info('Status do boleto consultado:', { notaId: notaFiscal.nota_fiscal_id, status: boletoStatus });
       }
     } catch (err) {
-      logger.warn('Erro ao consultar status do boleto (prosseguindo com exclusão):', { error: err.message });
+      logger.warn('Erro ao consultar status do boleto:', { error: err.message });
     }
 
-    // 3. Se boleto está aberto (waiting), cancela na API EFI
+    if (!boletoStatusConsultado) {
+      throw new APIError(
+        'Não foi possível confirmar o status atual do boleto na EFI. Tente novamente em instantes.',
+        503
+      );
+    }
+
+    if (boletoStatus === 'paid' || boletoStatus === 'settled') {
+      throw new APIError('Não é possível cancelar: o boleto já foi pago', 400, { status: boletoStatus });
+    }
+
+    // 3. Se boleto está aberto (waiting/active), cancela na API EFI
     if (boletoStatus === 'waiting' || boletoStatus === 'active') {
       try {
         const cancelUrl = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscal.nota_fiscal_id}/cancel`;
@@ -462,8 +478,6 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
       } catch (err) {
         logger.warn('Erro ao cancelar boleto na API EFI (prosseguindo com exclusão):', { error: err.message });
       }
-    } else if (boletoStatus === 'paid') {
-      throw new APIError('Não é possível cancelar: o boleto já foi pago', 400, { status: boletoStatus });
     }
   }
 

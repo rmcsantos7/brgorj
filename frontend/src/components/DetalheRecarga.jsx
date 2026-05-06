@@ -80,12 +80,14 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
     }
   };
 
-  // Mapeia status (combinando crd_rem_status e boleto_status) para badge visual
+  // Mapeia status (combinando crd_rem_status e boleto_status) para badge visual.
+  // Boleto pago vence sobre remessa cancelada — se o cliente pagou, mostramos "Pago"
+  // mesmo que a remessa tenha sido marcada como 'C' (race com cancelamento manual / cron).
   const formatarStatusBadge = (remStatus, boletoStatus, temNotaFiscal) => {
-    if (remStatus === 'C') return { label: 'Cancelada', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' };
-    if (remStatus === 'E') return { label: 'Erro no boleto', bg: '#fffbeb', color: '#b45309', border: '#fde68a' };
     const s = (boletoStatus || '').toLowerCase();
     if (s === 'paid' || s === 'settled') return { label: 'Pago', bg: '#dcfce7', color: '#15803d', border: '#86efac' };
+    if (remStatus === 'C') return { label: 'Cancelada', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' };
+    if (remStatus === 'E') return { label: 'Erro no boleto', bg: '#fffbeb', color: '#b45309', border: '#fde68a' };
     if (s === 'expired') return { label: 'Vencido', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' };
     if (s === 'waiting' || s === 'active' || s === 'pending') return { label: 'Aguardando pagamento', bg: '#fef3c7', color: '#b45309', border: '#fcd34d' };
     if (temNotaFiscal) return { label: 'Aguardando pagamento', bg: '#fef3c7', color: '#b45309', border: '#fcd34d' };
@@ -138,7 +140,9 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
 
   const taxa = dados.taxa || 0;
   const totalDesconto = taxa > 0 ? Math.round((dados.valor_bruto - dados.valor_liquido) * 100) / 100 : 0;
-  const remessaCancelada = dados.status === 'C';
+  const boletoPago = ['paid', 'settled'].includes((dados.boleto?.status || '').toLowerCase());
+  // Se o boleto foi pago, o estado real é "pago" — mesmo que o status no DB esteja 'C'
+  const remessaCancelada = dados.status === 'C' && !boletoPago;
   const statusBadge = formatarStatusBadge(dados.status, dados.boleto?.status, !!dados.boleto?.nota_fiscal_id);
 
   return (
@@ -218,7 +222,7 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
               {reemitindo ? 'Gerando...' : 'Tentar Gerar Boleto'}
             </button>
           )}
-          {dados.status !== 'C' && (
+          {dados.status !== 'C' && !boletoPago && (
             <button
               onClick={() => setMostrarConfirmacao(true)}
               disabled={cancelando}
