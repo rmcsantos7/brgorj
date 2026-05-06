@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { creditosAPI } from '../services/api';
+import CurrencyInput from './CurrencyInput';
 
 const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVoltar, onSucesso, creditoHook, taxa = 0 }) => {
   /**
@@ -531,13 +532,9 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
                   <td>{colab.nome}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--cinza-600)' }}>{formatarCPF(colab.cpf)}</td>
                   <td className="align-right">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                    <CurrencyInput
                       value={colab.valor}
-                      onChange={(e) => handleValorChange(idx, e.target.value)}
+                      onChange={(novo) => handleValorChange(idx, novo)}
                       disabled={creditoHook.creditoLoading}
                       style={{
                         width: '110px',

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import CurrencyInput from './CurrencyInput';
 
 const TableColaboradores = ({ colaboradores, selecionados, onToggle, valores, onValorChange, pagination, total }) => {
   /**
@@ -56,13 +57,9 @@ const TableColaboradores = ({ colaboradores, selecionados, onToggle, valores, on
               <td>{colab.nome}</td>
               <td>{mascaraCPF(colab.cpf)}</td>
               <td className="align-right">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
+                <CurrencyInput
                   value={valores[colab.id] || ''}
-                  onChange={(e) => onValorChange(colab.id, e.target.value)}
+                  onChange={(novo) => onValorChange(colab.id, novo)}
                   disabled={!selecionados[colab.id]}
                   style={{
                     width: '110px',
