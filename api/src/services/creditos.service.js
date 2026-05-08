@@ -19,6 +19,60 @@ const logger = require('../utils/logger');
 const db = require('../config/database');
 
 /**
+ * Estados finais do boleto — não precisam ser sincronizados com a EFI.
+ * 'paid'/'settled' são quitações; 'canceled'/'cancelled'/'expired' já refletem
+ * o término do ciclo do boleto.
+ */
+const STATUS_FINAIS_BOLETO = ['paid', 'settled', 'canceled', 'cancelled', 'expired'];
+
+/**
+ * Consulta a EFI e atualiza o status local do boleto se mudou. Usado ao abrir
+ * o detalhe para garantir que o badge ("Pago"/"Cancelado"/"Aguardando") reflita
+ * a situação real — sem isso, um pagamento que aconteceu após o cancelamento
+ * manual (Remessa #108) ou um pagamento sem webhook fica invisível para o usuário.
+ *
+ * Retorna o status atualizado (ou o local original se a EFI estiver fora ou em
+ * estado final).
+ */
+const sincronizarStatusBoletoEFI = async (notaFiscalId, statusLocal) => {
+  if (!notaFiscalId) return statusLocal;
+  const s = (statusLocal || '').toLowerCase();
+  if (STATUS_FINAIS_BOLETO.includes(s)) return statusLocal;
+
+  try {
+    const baseUrl = process.env.BASE_URL_HUB_BAAS || 'http://localhost:5003';
+    const idOperacao = process.env.HUB_BAAS_ID_OPERACAO || 'BOLETO_EFI';
+    const token = process.env.HUB_BAAS_TOKEN || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const url = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscalId}`;
+    const response = await fetch(url, { headers });
+    const result = await response.json().catch(() => null);
+
+    if (result && result.success && result.data && result.data.status) {
+      const efiStatus = result.data.status;
+      if (efiStatus !== statusLocal) {
+        await creditosRepository.atualizarBoletoStatus(notaFiscalId, efiStatus);
+        logger.info('Status do boleto sincronizado com EFI:', {
+          notaFiscalId,
+          anterior: statusLocal,
+          novo: efiStatus
+        });
+        return efiStatus;
+      }
+    }
+  } catch (err) {
+    logger.warn('Falha ao sincronizar status do boleto com EFI:', {
+      notaFiscalId,
+      error: err.message
+    });
+  }
+
+  return statusLocal;
+};
+
+/**
  * Chama Hub/EFI para gerar boleto de uma nota fiscal.
  * Retorna { boleto, erro }. Se sucesso, já persiste no banco.
  */
@@ -346,6 +400,19 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
 
   try {
     const detalhes = await creditosRepository.buscarDetalheRemessa(remessaId, clienteId);
+
+    // Antes de montar a resposta, tenta sincronizar o status do boleto com a EFI
+    // para casos como a Remessa #108 (paga após cancelamento manual): se a EFI
+    // tem o estado correto, atualiza local e o badge sai certo na tela.
+    if (detalhes.length > 0 && detalhes[0].nota_fiscal_id) {
+      const statusAtualizado = await sincronizarStatusBoletoEFI(
+        detalhes[0].nota_fiscal_id,
+        detalhes[0].boleto_status
+      );
+      if (statusAtualizado !== detalhes[0].boleto_status) {
+        detalhes.forEach(d => { d.boleto_status = statusAtualizado; });
+      }
+    }
 
     const taxa = detalhes.length > 0 ? parseFloat(detalhes[0].taxa) || 0 : 0;
     const meta = detalhes.length > 0 ? {

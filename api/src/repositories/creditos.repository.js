@@ -124,7 +124,7 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
     INNER JOIN crd_cliente cli ON cli.crd_cli_id = r.crd_cli_id
     LEFT JOIN crd_nota_fiscal nf
       ON nf.crd_not_id = c.crd_not_id
-      AND nf.crd_not_situacao = 'A'
+      AND nf.crd_not_situacao IS DISTINCT FROM 'C'
     WHERE r.crd_cli_id = $1
   `;
 
@@ -226,7 +226,7 @@ const buscarDetalheRemessa = async (remessaId, clienteId) => {
     INNER JOIN crd_usuario_credito_remessa r ON r.crd_usucrerem_id = c.crd_usucrerem_id
     LEFT JOIN crd_nota_fiscal nf
       ON nf.crd_not_id = c.crd_not_id
-      AND nf.crd_not_situacao = 'A'
+      AND nf.crd_not_situacao IS DISTINCT FROM 'C'
     WHERE c.crd_usucrerem_id = $1
       AND c.crd_cli_id = $2
     ORDER BY u.crd_usr_nome ASC
@@ -355,6 +355,26 @@ const atualizarNotaComBoleto = async (notaId, boleto) => {
 };
 
 /**
+ * Atualiza apenas o status do boleto de uma nota fiscal (sem mexer nos demais
+ * campos). Usado pela sincronização com a EFI ao abrir o detalhe da remessa.
+ */
+const atualizarBoletoStatus = async (notaId, novoStatus) => {
+  const sql = `
+    UPDATE crd_nota_fiscal SET
+      crd_not_boleto_status = $1,
+      crd_not_boleto_status_atualizado_em = NOW()
+    WHERE crd_not_id = $2
+  `;
+  try {
+    await db.query(sql, [novoStatus, notaId]);
+    logger.info('Status do boleto atualizado:', { notaId, novoStatus });
+  } catch (error) {
+    logger.error('Erro ao atualizar status do boleto:', { error: error.message });
+    throw error;
+  }
+};
+
+/**
  * Busca nota fiscal vinculada a uma remessa (pela data de crédito e cliente)
  * @param {number} remessaId - ID da remessa
  * @param {number} clienteId - ID do cliente
@@ -369,7 +389,7 @@ const buscarNotaFiscalPorRemessa = async (remessaId, clienteId) => {
     INNER JOIN crd_usuario_credito c ON c.crd_not_id = nf.crd_not_id
     WHERE c.crd_usucrerem_id = $1
       AND c.crd_cli_id = $2
-      AND nf.crd_not_situacao = 'A'
+      AND nf.crd_not_situacao IS DISTINCT FROM 'C'
     ORDER BY nf.crd_not_id DESC
     LIMIT 1
   `;
@@ -508,6 +528,7 @@ module.exports = {
   criarNotaFiscal,
   associarCreditosANota,
   atualizarNotaComBoleto,
+  atualizarBoletoStatus,
   buscarHistorico,
   buscarDetalheRemessa,
   buscarNotaFiscalPorRemessa,
