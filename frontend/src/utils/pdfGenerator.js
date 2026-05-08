@@ -601,9 +601,16 @@ export const gerarPdfRemessa = (dados) => {
     doc.setFont('helvetica', 'normal');
     doc.text(info.label.toUpperCase(), infoX + infoCardW / 2, y + 14, { align: 'center' });
 
-    doc.setFontSize(10);
-    doc.setTextColor(...CORES.cinzaEscuro);
+    // Reduz fonte se o valor (ex.: e-mail do operador) for mais largo que o card
     doc.setFont('helvetica', 'bold');
+    const maxValueWidth = infoCardW - 10;
+    let valueFontSize = 10;
+    doc.setFontSize(valueFontSize);
+    while (valueFontSize > 6 && doc.getTextWidth(info.value) > maxValueWidth) {
+      valueFontSize -= 0.5;
+      doc.setFontSize(valueFontSize);
+    }
+    doc.setTextColor(...CORES.cinzaEscuro);
     doc.text(info.value, infoX + infoCardW / 2, y + 32, { align: 'center' });
 
     infoX += infoCardW + 10;
