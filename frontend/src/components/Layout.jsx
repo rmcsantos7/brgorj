@@ -54,7 +54,10 @@ const IconClientes = () => (
 );
 
 function Layout() {
-  const { usuario, logout, trocarCliente } = useAuth();
+  const {
+    usuario, logout, trocarCliente,
+    precisaEscolherCliente, restaurantesDisponiveis, confirmarClienteSelecionado
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -71,6 +74,61 @@ function Layout() {
   const [buscaCliente, setBuscaCliente] = useState('');
   const [erroCliente, setErroCliente] = useState('');
   const [trocandoCliente, setTrocandoCliente] = useState(false);
+
+  // Estado do modal bloqueante (logo após o login)
+  const [buscaInicial, setBuscaInicial] = useState('');
+  const [erroInicial, setErroInicial] = useState('');
+  const [confirmandoInicial, setConfirmandoInicial] = useState(false);
+  const [clientesInicial, setClientesInicial] = useState([]);
+  const [carregandoInicial, setCarregandoInicial] = useState(false);
+
+  // Carrega lista para o modal bloqueante: usa a já vinda no login; cai pro
+  // /auth/clientes só se o usuário tiver dado refresh entre login e seleção.
+  useEffect(() => {
+    if (!precisaEscolherCliente) return;
+    if (restaurantesDisponiveis && restaurantesDisponiveis.length > 0) {
+      setClientesInicial(restaurantesDisponiveis);
+      return;
+    }
+    let cancelado = false;
+    setCarregandoInicial(true);
+    setErroInicial('');
+    authAPI.listarClientes()
+      .then(res => { if (!cancelado) setClientesInicial(res.data?.data || []); })
+      .catch(err => {
+        if (!cancelado) setErroInicial(err.response?.data?.message || 'Erro ao carregar restaurantes');
+      })
+      .finally(() => { if (!cancelado) setCarregandoInicial(false); });
+    return () => { cancelado = true; };
+  }, [precisaEscolherCliente, restaurantesDisponiveis]);
+
+  const clientesInicialFiltrados = clientesInicial.filter(c => {
+    if (!buscaInicial.trim()) return true;
+    const termo = buscaInicial.toLowerCase();
+    const nome = (c.crd_cli_nome_fantasia || '').toLowerCase();
+    const cnpj = (c.crd_cli_cnpj || '').replace(/\D/g, '');
+    return nome.includes(termo) || cnpj.includes(termo.replace(/\D/g, ''));
+  });
+
+  const confirmarSelecaoInicial = async (clienteId) => {
+    if (confirmandoInicial) return;
+    setConfirmandoInicial(true);
+    setErroInicial('');
+    try {
+      await confirmarClienteSelecionado(clienteId);
+      navigate('/dashboard');
+    } catch (err) {
+      setErroInicial(err.response?.data?.message || 'Erro ao selecionar restaurante');
+    } finally {
+      setConfirmandoInicial(false);
+    }
+  };
+
+  const sairDoModalBloqueante = () => {
+    if (confirmandoInicial) return;
+    logout();
+    navigate('/login');
+  };
 
   const pageTitles = {
     '/dashboard': 'Dashboard Empresa',
@@ -240,6 +298,74 @@ function Layout() {
                   })}
                 </ul>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal bloqueante de seleção inicial — admin / multi-restaurante após o login.
+          Sem botão fechar e sem fechar ao clicar fora: só sai escolhendo um restaurante
+          ou via Sair (que faz logout). */}
+      {precisaEscolherCliente && (
+        <div className="cliente-modal-overlay">
+          <div className="cliente-modal" onClick={e => e.stopPropagation()}>
+            <div className="cliente-modal-header">
+              <h3>{isAdmin ? 'Selecione o cliente para acessar' : 'Selecione o restaurante para acessar'}</h3>
+            </div>
+
+            <div className="cliente-modal-body">
+              <p style={{ margin: '0 0 12px', color: 'var(--cinza-600)', fontSize: '0.85rem' }}>
+                Sua conta tem acesso a múltiplos {isAdmin ? 'clientes' : 'restaurantes'}. Escolha em qual deseja navegar nesta sessão.
+              </p>
+              <input
+                type="text"
+                className="cliente-modal-search"
+                placeholder="Buscar por nome ou CNPJ..."
+                value={buscaInicial}
+                onChange={e => setBuscaInicial(e.target.value)}
+                autoFocus
+                disabled={confirmandoInicial}
+              />
+
+              {erroInicial && (
+                <div className="cliente-modal-erro">{erroInicial}</div>
+              )}
+
+              {carregandoInicial ? (
+                <div className="cliente-modal-loading">Carregando...</div>
+              ) : (
+                <ul className="cliente-modal-lista">
+                  {clientesInicialFiltrados.length === 0 && (
+                    <li className="cliente-modal-vazio">Nenhum {isAdmin ? 'cliente' : 'restaurante'} encontrado</li>
+                  )}
+                  {clientesInicialFiltrados.map(c => (
+                    <li
+                      key={c.crd_cli_id}
+                      className="cliente-modal-item"
+                      onClick={() => confirmarSelecaoInicial(c.crd_cli_id)}
+                      style={{ pointerEvents: confirmandoInicial ? 'none' : 'auto', opacity: confirmandoInicial ? 0.6 : 1 }}
+                    >
+                      <div className="cliente-modal-item-nome">{c.crd_cli_nome_fantasia || `Cliente #${c.crd_cli_id}`}</div>
+                      <div className="cliente-modal-item-cnpj">{formatCNPJ(c.crd_cli_cnpj)}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={sairDoModalBloqueante}
+                  disabled={confirmandoInicial}
+                  style={{
+                    padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600,
+                    color: '#dc2626', background: 'transparent', border: '1px solid #fecaca',
+                    borderRadius: '8px', cursor: confirmandoInicial ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Sair
+                </button>
+              </div>
             </div>
           </div>
         </div>

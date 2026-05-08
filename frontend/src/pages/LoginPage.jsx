@@ -1,6 +1,10 @@
 /**
  * Página de Login com 2FA obrigatório
- * Etapas: 'login' → 'choose-method' → 'verify-code'
+ * Etapas: 'login' → 'choose-method' → 'verify-code' → ('terms')
+ *
+ * A seleção obrigatória de cliente para admins/multi-restaurante deixou de
+ * ser uma etapa do login: agora ela aparece como modal bloqueante dentro do
+ * Layout assim que o usuário entra.
  */
 
 import React, { useState } from 'react';
@@ -9,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css';
 
 function LoginPage() {
-  const [etapa, setEtapa] = useState('login'); // 'login' | 'choose-method' | 'verify-code' | 'terms' | 'select-restaurant'
+  const [etapa, setEtapa] = useState('login'); // 'login' | 'choose-method' | 'verify-code' | 'terms'
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -23,14 +27,10 @@ function LoginPage() {
   const [metodoEscolhido, setMetodoEscolhido] = useState(null);
   const [codigo, setCodigo] = useState('');
 
-  // Estado da seleção de restaurante (quando usuário tem mais de 1)
-  const [restaurantes, setRestaurantes] = useState([]);
-  const [restauranteAtivoId, setRestauranteAtivoId] = useState(null);
-
   // Etapa termos
   const [aceiteMarcado, setAceiteMarcado] = useState(false);
 
-  const { iniciarLogin, enviar2FA, verificar2FA, aceitarTermos, finalizarLoginComRestaurante, cancelarAuthPendente } = useAuth();
+  const { iniciarLogin, enviar2FA, verificar2FA, aceitarTermos, cancelarAuthPendente } = useAuth();
   const navigate = useNavigate();
 
   const errorMsg = (err, fallback) =>
@@ -89,18 +89,12 @@ function LoginPage() {
         return;
       }
       if (resp.precisaAceitarTermos) {
-        setRestaurantes(resp.restaurantes || []);
-        setRestauranteAtivoId(resp.usuario.crd_cli_id);
         setAceiteMarcado(false);
         setEtapa('terms');
         return;
       }
-      if (resp.precisaEscolherRestaurante) {
-        setRestaurantes(resp.restaurantes || []);
-        setRestauranteAtivoId(resp.usuario.crd_cli_id);
-        setEtapa('select-restaurant');
-        return;
-      }
+      // Login efetivado. Se for admin ou multi-restaurante, o modal bloqueante
+      // do Layout cuida da seleção obrigatória — basta navegar.
       navigate('/dashboard');
     } catch (err) {
       setErro(errorMsg(err, 'Erro ao validar código'));
@@ -114,28 +108,10 @@ function LoginPage() {
     setErro('');
     setEnviando(true);
     try {
-      const { precisaEscolherRestaurante } = await aceitarTermos();
-      if (precisaEscolherRestaurante) {
-        setEtapa('select-restaurant');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      setErro(errorMsg(err, 'Erro ao registrar aceite'));
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  const handleSelecionarRestaurante = async (clienteId) => {
-    if (enviando) return;
-    setErro('');
-    setEnviando(true);
-    try {
-      await finalizarLoginComRestaurante(clienteId);
+      await aceitarTermos();
       navigate('/dashboard');
     } catch (err) {
-      setErro(errorMsg(err, 'Erro ao selecionar restaurante'));
+      setErro(errorMsg(err, 'Erro ao registrar aceite'));
     } finally {
       setEnviando(false);
     }
@@ -380,49 +356,6 @@ function LoginPage() {
             <a href="#" onClick={(e) => { e.preventDefault(); cancelarAuthPendente(); voltarPara('login'); }}>
               Cancelar
             </a>
-          </div>
-        </div>
-      )}
-
-      {/* Etapa 5 — Selecionar restaurante (quando usuário tem mais de 1) */}
-      {etapa === 'select-restaurant' && (
-        <div className="login-card">
-          <h2>Selecione o restaurante</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: '0 0 18px', lineHeight: '1.5' }}>
-            Sua conta tem acesso a {restaurantes.length} restaurantes. Em qual deseja entrar?
-          </p>
-          {erro && <div className="login-error">{erro}</div>}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', marginBottom: '12px' }}>
-            {restaurantes.map((c) => {
-              const ativo = c.crd_cli_id === restauranteAtivoId;
-              return (
-                <button
-                  key={c.crd_cli_id}
-                  type="button"
-                  onClick={() => handleSelecionarRestaurante(c.crd_cli_id)}
-                  disabled={enviando}
-                  style={{
-                    textAlign: 'left',
-                    padding: '12px 14px',
-                    background: ativo ? 'rgba(249, 103, 140, 0.18)' : 'rgba(255,255,255,0.08)',
-                    border: ativo ? '1px solid #F9678C' : '1px solid rgba(255,255,255,0.18)',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    cursor: enviando ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    transition: 'background 0.15s'
-                  }}
-                >
-                  <div style={{ fontWeight: 700 }}>{c.crd_cli_nome_fantasia || `Cliente #${c.crd_cli_id}`}</div>
-                  {c.crd_cli_cnpj && (
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>
-                      {c.crd_cli_cnpj}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
           </div>
         </div>
       )}

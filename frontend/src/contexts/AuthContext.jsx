@@ -35,6 +35,25 @@ export function AuthProvider({ children }) {
   const [senhaTemporaria, setSenhaTemporaria] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
+  // Estado da seleção obrigatória de cliente após o login (admin / multi-restaurante).
+  // Persiste em sessionStorage para sobreviver a um refresh entre login e seleção.
+  const [restaurantesDisponiveis, setRestaurantesDisponiveis] = useState([]);
+  const [precisaEscolherCliente, setPrecisaEscolherCliente] = useState(
+    () => sessionStorage.getItem('precisa_escolher_cliente') === '1'
+  );
+
+  const ativarEscolhaCliente = useCallback((restaurantes = []) => {
+    setRestaurantesDisponiveis(restaurantes);
+    setPrecisaEscolherCliente(true);
+    sessionStorage.setItem('precisa_escolher_cliente', '1');
+  }, []);
+
+  const desativarEscolhaCliente = useCallback(() => {
+    setRestaurantesDisponiveis([]);
+    setPrecisaEscolherCliente(false);
+    sessionStorage.removeItem('precisa_escolher_cliente');
+  }, []);
+
   // Verifica token salvo ao montar (com cleanup para evitar memory leak)
   useEffect(() => {
     let cancelado = false;
@@ -58,6 +77,8 @@ export function AuthProvider({ children }) {
             removeToken();
             setUsuario(null);
             setSenhaTemporaria(false);
+            sessionStorage.removeItem('precisa_escolher_cliente');
+            setPrecisaEscolherCliente(false);
           }
         })
         .finally(() => {
@@ -86,93 +107,94 @@ export function AuthProvider({ children }) {
     return res.data.data; // { challenge_token, metodo }
   }, []);
 
-  // Auth pendente — segura token+usuário entre verificar2FA e a seleção de restaurante
+  // Auth pendente — segura token+usuário entre verificar2FA e o aceite dos termos.
+  // A escolha de restaurante deixou de bloquear o login: agora ela é exigida via
+  // modal bloqueante dentro do Layout (precisaEscolherCliente).
   const [authPendente, setAuthPendente] = useState(null);
 
   /**
-   * Etapa 3 — valida o código. Se o usuário tem múltiplos restaurantes e a senha
-   * não é temporária, NÃO efetiva o login ainda — guarda em authPendente até o
-   * usuário escolher o restaurante. Caso contrário, persiste imediatamente.
+   * Etapa 3 — valida o código. Se exige aceite de termos, segura em authPendente
+   * (LoginPage trata a etapa). Se exige escolher cliente, login é efetivado
+   * normalmente e levanta a flag `precisaEscolherCliente` para o Layout exibir o
+   * modal bloqueante.
    */
   const verificar2FA = useCallback(async (challengeToken, codigo, lembrar = false) => {
     const res = await api.post('/auth/2fa/verificar', { challenge_token: challengeToken, codigo });
     const { token, senha_temporaria: senhaTemp, terms_accepted: termsAccepted, usuario: usr, restaurantes } = res.data.data;
     const precisaTermos = !senhaTemp && !termsAccepted;
-    const precisaEscolher = !senhaTemp && termsAccepted && (usr?.total_restaurantes || 1) > 1;
+    const ehAdmin = usr?.usr_administrador === 'S';
+    const multiRestaurante = (usr?.total_restaurantes || 1) > 1;
+    const precisaEscolher = !senhaTemp && termsAccepted && (ehAdmin || multiRestaurante);
 
-    if (precisaTermos || precisaEscolher) {
+    if (precisaTermos) {
       setAuthPendente({ token, usuario: usr, lembrar, restaurantes: restaurantes || [], termsAccepted: !!termsAccepted });
       return {
         usuario: usr,
         senhaTemporaria: false,
-        precisaAceitarTermos: precisaTermos,
-        precisaEscolherRestaurante: precisaEscolher,
+        precisaAceitarTermos: true,
+        precisaEscolherRestaurante: false,
         restaurantes: restaurantes || []
       };
     }
+
     setToken(token, lembrar);
     setUsuario(usr);
     setSenhaTemporaria(!!senhaTemp);
-    return { usuario: usr, senhaTemporaria: !!senhaTemp };
-  }, []);
+    if (precisaEscolher) {
+      ativarEscolhaCliente(restaurantes || []);
+    } else {
+      desativarEscolhaCliente();
+    }
+    return { usuario: usr, senhaTemporaria: !!senhaTemp, precisaEscolherRestaurante: precisaEscolher };
+  }, [ativarEscolhaCliente, desativarEscolhaCliente]);
 
   /**
-   * Registra o aceite dos termos no backend usando o token pendente.
-   * Não efetiva o login ainda — o LoginPage decide o próximo passo.
+   * Registra o aceite dos termos no backend usando o token pendente, efetiva o
+   * login e — se for admin ou multi-restaurante — levanta a flag de seleção
+   * obrigatória.
    */
   const aceitarTermos = useCallback(async () => {
     if (!authPendente) throw new Error('Não há login pendente');
-    const { token, lembrar } = authPendente;
+    const { token, lembrar, usuario: usr, restaurantes } = authPendente;
     setToken(token, lembrar);
     try {
       await api.post('/auth/aceitar-termos');
-      const next = { ...authPendente, termsAccepted: true };
-      setAuthPendente(next);
-      const precisaEscolher = (next.usuario?.total_restaurantes || 1) > 1;
-      if (!precisaEscolher) {
-        // só 1 restaurante — já efetiva o login
-        setUsuario(next.usuario);
-        setSenhaTemporaria(false);
-        setAuthPendente(null);
-      }
+      const ehAdmin = usr?.usr_administrador === 'S';
+      const multiRestaurante = (usr?.total_restaurantes || 1) > 1;
+      const precisaEscolher = ehAdmin || multiRestaurante;
+
+      setUsuario(usr);
+      setSenhaTemporaria(false);
+      setAuthPendente(null);
+      if (precisaEscolher) ativarEscolhaCliente(restaurantes || []);
+      else desativarEscolhaCliente();
+
       return { precisaEscolherRestaurante: precisaEscolher };
     } catch (err) {
       removeToken();
       throw err;
     }
-  }, [authPendente]);
+  }, [authPendente, ativarEscolhaCliente, desativarEscolhaCliente]);
 
   /**
-   * Conclui o login depois que o usuário escolheu um restaurante.
-   * Se o escolhido é o default já no token pendente, só persiste.
-   * Senão, chama /auth/trocar-cliente usando o token pendente.
+   * Conclui a seleção obrigatória do cliente após login. Se o id escolhido é o
+   * mesmo já carregado no usuário, apenas baixa a flag. Caso contrário, troca
+   * via /auth/trocar-cliente e atualiza token/usuário.
    */
-  const finalizarLoginComRestaurante = useCallback(async (clienteId) => {
-    if (!authPendente) throw new Error('Não há login pendente');
-    const { token, usuario: usr, lembrar } = authPendente;
-    if (clienteId === usr.crd_cli_id) {
-      setToken(token, lembrar);
-      setUsuario(usr);
-      setSenhaTemporaria(false);
-      setAuthPendente(null);
-      return usr;
+  const confirmarClienteSelecionado = useCallback(async (clienteId) => {
+    if (!usuario) throw new Error('Sem usuário autenticado');
+    if (clienteId === usuario.crd_cli_id) {
+      desativarEscolhaCliente();
+      return usuario;
     }
-    // Persiste o token pendente antes da chamada (axios interceptor pega de getToken)
-    setToken(token, lembrar);
-    try {
-      const res = await api.post('/auth/trocar-cliente', { cliente_id: clienteId });
-      const { token: novoToken, usuario: novoUsuario } = res.data.data;
-      setToken(novoToken, lembrar);
-      setUsuario(novoUsuario);
-      setSenhaTemporaria(false);
-      setAuthPendente(null);
-      return novoUsuario;
-    } catch (err) {
-      // se falhar, desfaz a persistência do token pendente
-      removeToken();
-      throw err;
-    }
-  }, [authPendente]);
+    const res = await api.post('/auth/trocar-cliente', { cliente_id: clienteId });
+    const { token: novoToken, usuario: novoUsuario } = res.data.data;
+    const lembrar = !!localStorage.getItem('auth_token');
+    setToken(novoToken, lembrar);
+    setUsuario(novoUsuario);
+    desativarEscolhaCliente();
+    return novoUsuario;
+  }, [usuario, desativarEscolhaCliente]);
 
   const cancelarAuthPendente = useCallback(() => {
     setAuthPendente(null);
@@ -201,7 +223,8 @@ export function AuthProvider({ children }) {
     removeToken();
     setUsuario(null);
     setSenhaTemporaria(false);
-  }, []);
+    desativarEscolhaCliente();
+  }, [desativarEscolhaCliente]);
 
   // Escutar evento de logout disparado pelo interceptor da API (evita hard reload)
   useEffect(() => {
@@ -214,10 +237,11 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     usuario, carregando,
     iniciarLogin, enviar2FA, verificar2FA,
-    aceitarTermos, finalizarLoginComRestaurante, cancelarAuthPendente, authPendente,
+    aceitarTermos, confirmarClienteSelecionado, cancelarAuthPendente, authPendente,
     logout, atualizarToken, trocarCliente,
-    autenticado: !!usuario, senhaTemporaria
-  }), [usuario, carregando, iniciarLogin, enviar2FA, verificar2FA, aceitarTermos, finalizarLoginComRestaurante, cancelarAuthPendente, authPendente, logout, atualizarToken, trocarCliente, senhaTemporaria]);
+    autenticado: !!usuario, senhaTemporaria,
+    precisaEscolherCliente, restaurantesDisponiveis
+  }), [usuario, carregando, iniciarLogin, enviar2FA, verificar2FA, aceitarTermos, confirmarClienteSelecionado, cancelarAuthPendente, authPendente, logout, atualizarToken, trocarCliente, senhaTemporaria, precisaEscolherCliente, restaurantesDisponiveis]);
 
   return (
     <AuthContext.Provider value={value}>
