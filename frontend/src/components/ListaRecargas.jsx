@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { creditosAPI } from '../services/api';
+import { BoletoPdfLink, BoletoQrCode } from './BoletoMedia';
 import DetalheRecarga from './DetalheRecarga';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -381,10 +382,8 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                                 <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
                               </svg>
                             </button>
-                            <a
-                              href={creditosAPI.getBoletoPdfUrl(r.nota_fiscal_id)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <BoletoPdfLink
+                              notaId={r.nota_fiscal_id}
                               title="Visualizar Boleto PDF"
                               style={{
                                 background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px',
@@ -394,7 +393,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                               </svg>
-                            </a>
+                            </BoletoPdfLink>
                             {!cancelada && !boletoPago && (
                               <button
                                 title="Cancelar Remessa"
@@ -488,8 +487,8 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
 
             {qrCodeModal.nota_fiscal_id && (
               <div style={{ marginBottom: '16px' }}>
-                <img
-                  src={creditosAPI.getBoletoQrCodeUrl(qrCodeModal.nota_fiscal_id)}
+                <BoletoQrCode
+                  notaId={qrCodeModal.nota_fiscal_id}
                   alt="QR Code PIX"
                   style={{ width: '220px', height: '220px', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '8px', background: '#fff' }}
                 />

@@ -84,11 +84,43 @@ const enviarSMS = async (numero, mensagem) => {
   }
 
   const numeroLimpo = String(numero).replace(/\D/g, '');
-  const numeroComDDI = numeroLimpo.startsWith('55') ? numeroLimpo : `55${numeroLimpo}`;
+  // Mobile BR com DDI = 13 dígitos (55 + DDD + 9XXXXXXXX). Se já temos
+  // 12 ou 13 dígitos, confiamos que o DDI já veio; com 10 ou 11 dígitos
+  // (DDD+número), prepende o 55. Olhar só o prefixo "55" classificaria
+  // um celular de Santa Maria-RS (DDD 55) como já-tendo-DDI por engano.
+  let numeroComDDI;
+  if (numeroLimpo.length === 12 || numeroLimpo.length === 13) {
+    numeroComDDI = numeroLimpo;
+  } else if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
+    numeroComDDI = `55${numeroLimpo}`;
+  } else {
+    logger.warn('SMS: número com tamanho inválido', { tamanho: numeroLimpo.length });
+    throw new APIError('Número de celular cadastrado é inválido', 400);
+  }
+  if (numeroComDDI.length !== 13) {
+    logger.warn('SMS: número final não é mobile BR válido', { tamanho: numeroComDDI.length });
+    throw new APIError('Número de celular cadastrado não é um mobile válido', 400);
+  }
+
+  // Normaliza a mensagem para um subset seguro do GSM-7 (codificacao: '0').
+  // Diacríticos pt-BR (ã, õ, ó, í, á, â, ê, ú...) e pontuação tipográfica
+  // (em-dash, aspas curvas, reticências) ficam fora do GSM-7 básico —
+  // gateways às vezes aceitam o request e silenciosamente não despacham.
+  // Para SMS transacional de código de verificação não vale a pena gastar
+  // metade dos caracteres com UCS-2; padroniza tudo em ASCII.
+  const mensagemNormalizada = mensagem
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // remove diacríticos
+    .replace(/[‐-―]/g, '-') // hifens/dashes unicode → '-'
+    .replace(/[‘’]/g, "'") // aspas simples tipográficas
+    .replace(/[“”]/g, '"') // aspas duplas tipográficas
+    .replace(/…/g, '...')        // reticências
+    .replace(/[^\x20-\x7E]/g, '');    // descarta o que sobrar fora do ASCII imprimível
+
   const payload = JSON.stringify([{
     numero: numeroComDDI,
     servico: cfg.servico,
-    mensagem,
+    mensagem: mensagemNormalizada,
     parceiro_id: cfg.parceiro_id,
     codificacao: '0'
   }]);

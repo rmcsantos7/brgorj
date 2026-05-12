@@ -50,7 +50,7 @@ const sincronizarStatusBoletoEFI = async (notaFiscalId, statusLocal) => {
     const response = await fetch(url, { headers });
     const result = await response.json().catch(() => null);
 
-    if (result && result.success && result.data && result.data.status) {
+    if (response.ok && result?.data?.status) {
       const efiStatus = result.data.status;
       if (efiStatus !== statusLocal) {
         await creditosRepository.atualizarBoletoStatus(notaFiscalId, efiStatus);
@@ -93,7 +93,7 @@ const chamarApiBoleto = async (notaFiscalId) => {
     });
     const boletoResult = await boletoResponse.json().catch(() => null);
 
-    if (boletoResult && boletoResult.success && boletoResult.data) {
+    if (boletoResponse.ok && boletoResult?.data) {
       const boleto = boletoResult.data;
       await creditosRepository.atualizarNotaComBoleto(notaFiscalId, boleto);
       return { boleto, erro: null };
@@ -511,7 +511,7 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
       const statusResponse = await fetch(statusUrl, { headers });
       const statusResult = await statusResponse.json();
 
-      if (statusResult.success && statusResult.data) {
+      if (statusResponse.ok && statusResult?.data?.status) {
         boletoStatus = statusResult.data.status;
         boletoStatusConsultado = true;
         logger.info('Status do boleto consultado:', { notaId: notaFiscal.nota_fiscal_id, status: boletoStatus });
@@ -539,8 +539,8 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
           method: 'PUT',
           headers
         });
-        const cancelResult = await cancelResponse.json();
-        boletoCancelado = cancelResult.success || false;
+        const cancelResult = await cancelResponse.json().catch(() => null);
+        boletoCancelado = cancelResponse.ok;
         logger.info('Boleto cancelado na API EFI:', { notaId: notaFiscal.nota_fiscal_id, resultado: cancelResult });
       } catch (err) {
         logger.warn('Erro ao cancelar boleto na API EFI (prosseguindo com exclusão):', { error: err.message });

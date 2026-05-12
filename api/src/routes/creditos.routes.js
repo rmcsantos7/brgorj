@@ -9,11 +9,12 @@ const creditosController = require('../controllers/creditos.controller');
 const authMiddleware = require('../middlewares/auth');
 const verificarClienteId = require('../middlewares/verificarClienteId');
 
-// Rotas públicas (proxy hub-bass — usadas por <img> e <a> no browser, sem JWT)
-router.get('/nota/:nota_id/pdf', creditosController.obterBoletoPdf);
-router.get('/nota/:nota_id/qrcode', creditosController.obterBoletoQrCode);
+// Todas as rotas exigem autenticação. O proxy de boleto/QR valida tenant
+// dentro do controller (lookup do crd_cli_id da nota), por isso passa só
+// pelo authMiddleware — não pelo verificarClienteId, que opera por query.
+router.get('/nota/:nota_id/pdf', authMiddleware, creditosController.obterBoletoPdf);
+router.get('/nota/:nota_id/qrcode', authMiddleware, creditosController.obterBoletoQrCode);
 
-// Demais rotas protegidas
 router.use(authMiddleware);
 router.use(verificarClienteId);
 

@@ -112,9 +112,18 @@ export const creditosAPI = {
       params: { cliente_id: clienteId }
     });
   },
-  // URLs proxy para boleto (PDF e QR Code via hub-bass)
-  getBoletoPdfUrl: (notaId) => `${API_URL}/creditos/nota/${notaId}/pdf`,
-  getBoletoQrCodeUrl: (notaId) => `${API_URL}/creditos/nota/${notaId}/qrcode`
+  // Boleto PDF e QR Code via hub-bass — exigem JWT, então não dá pra usar
+  // direto em <img src>/<a href>. Buscamos o blob autenticado e devolvemos
+  // uma object URL pronta pra ser passada a esses atributos. O caller é
+  // responsável por chamar URL.revokeObjectURL quando desmontar.
+  fetchBoletoPdfBlobUrl: async (notaId) => {
+    const res = await api.get(`/creditos/nota/${notaId}/pdf`, { responseType: 'blob' });
+    return URL.createObjectURL(res.data);
+  },
+  fetchBoletoQrCodeBlobUrl: async (notaId) => {
+    const res = await api.get(`/creditos/nota/${notaId}/qrcode`, { responseType: 'blob' });
+    return URL.createObjectURL(res.data);
+  }
 };
 
 /**

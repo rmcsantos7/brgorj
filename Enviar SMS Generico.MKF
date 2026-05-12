@@ -1,0 +1,776 @@
+object FlowSubModel1: TFlowSubModel
+  RuleID = 
+  RuleName = Enviar SMS Generico.MKF
+  RuleDescription = 
+  RuleTarget = 2
+  RuleCategory = 
+  object FlowStart1: TFlowStart
+    Left = 76
+    Top = 93
+    Width = 38
+    Height = 38
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ChangeDescription = False
+    OutputNames = 'FlowLine1'
+    Description = 'Inicio'
+    InputParams = 'CorpoSMS,Letras,50,;ListaDestinatarios,Variante,,'
+    Variables = 
+      'DadosSensiveisCelular,Tabela,,;Retorno,Letras,50,;Destinatario,L' +
+      'etras,50,;Contador,Inteiro,,1;TamanhoLista,Inteiro,,;URLCompleta' +
+      ',Letras,50,'
+    WorkFormCod = -1
+  end
+  object FlowExpression15: TFlowExpression
+    Left = 400
+    Top = 459
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine7'
+    OutputNames = 'FlowLine5'
+    Description = 'Envia SMS 1'
+    Text = 'Captura URL(@URLCompleta,,,,)'
+    ReturnVar = 'Retorno'
+    Expression = 
+      '<FUNCTION NAME="Captura&#x20;URL" REALNAME="ebfHttpConnection">'#13 +
+      #10'<PARAMS>'#13#10'<VARIABLE NAME="URLCompleta"/>'#13#10'<CONSTANT TYPE="Letra' +
+      's" NULL="TRUE"  ></CONSTANT>'#13#10'<CONSTANT TYPE="Inteiro" NULL="TRU' +
+      'E"  ></CONSTANT>'#13#10'<CONSTANT TYPE="Letras" NULL="TRUE"  ></CONSTA' +
+      'NT>'#13#10'<CONSTANT TYPE="Letras" NULL="TRUE"  ></CONSTANT>'#13#10'</PARAMS' +
+      '>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfHttpConnection<' +
+      '/TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FAL' +
+      'SE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13 +
+      #10'<TObjVariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>URLCom' +
+      'pleta</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIV' +
+      'EL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'</T' +
+      'ObjVariable>'#13#10'<TObjConst>'#13#10'<ID>3</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<T' +
+      'EXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVE' +
+      'L>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VAL' +
+      'OR></VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMX' +
+      'ML>'#13#10'<NULO>TRUE</NULO>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUI' +
+      'D>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjConst>'#13#10'<TObjConst>'#13#10'<ID>' +
+      '4</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10 +
+      '<TIPO>Inteiro</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_V' +
+      'ERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR></VALOR>'#13#10'<DMLTYPE>dtSelect' +
+      '</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>TRUE</NULO>'#13#10'<FIELD' +
+      'INDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE' +
+      '>'#13#10'</TObjConst>'#13#10'<TObjConst>'#13#10'<ID>5</ID>'#13#10'<NOME>CONSTANT</NOME>'#13 +
+      #10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPAT' +
+      'IVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<' +
+      'VALOR></VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGR' +
+      'AMXML>'#13#10'<NULO>TRUE</NULO>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></' +
+      'GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjConst>'#13#10'<TObjConst>'#13#10'<' +
+      'ID>6</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL' +
+      '>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR' +
+      '_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR></VALOR>'#13#10'<DMLTYPE>dtSele' +
+      'ct</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>TRUE</NULO>'#13#10'<FIE' +
+      'LDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCO' +
+      'DE>'#13#10'</TObjConst>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'</ROOT>'#13#10
+  end
+  object FlowExpression22: TFlowExpression
+    Left = 400
+    Top = 159
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine11'
+    OutputNames = 'FlowLine2'
+    Description = 'Monta texto SMS'
+    Text = 'Troca Todas as Subseq'#252#234'ncias(@CorpoSMS, ,%20)'
+    ReturnVar = 'CorpoSMS'
+    Expression = 
+      #9'<FUNCTION NAME="Troca Todas as Subseq'#252#234'ncias" REALNAME="ebfRepl' +
+      'aceAll">'#13#10#9#9'<PARAMS>'#13#10#9#9#9'<VARIABLE NAME="CorpoSMS"/>'#13#10#9#9#9'<CONSTA' +
+      'NT TYPE="Letras" NULL="FALSE"> </CONSTANT>'#13#10#9#9#9'<CONSTANT TYPE="L' +
+      'etras" NULL="FALSE">%20</CONSTANT>'#13#10#9#9'</PARAMS>'#13#10#9'</FUNCTION>'#13#10
+    DiagramXml = 
+      '<?xml version="1.0"?>'#13#10'<ROOT>'#13#10#9'<TObjFunction>'#13#10#9#9'<ID>1</ID>'#13#10#9#9 +
+      '<NOME>FUNCTION</NOME>'#13#10#9#9'<TEXT>ebfReplaceAll</TEXT>'#13#10#9#9'<SQL>FALS' +
+      'E</SQL>'#13#10#9#9'<TIPO>Letras</TIPO>'#13#10#9#9'<INCOMPATIVEL>FALSE</INCOMPATI' +
+      'VEL>'#13#10#9#9'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10#9#9'<PARAMS>'#13#10#9#9#9'<TObj' +
+      'Variable>'#13#10#9#9#9#9'<ID>2</ID>'#13#10#9#9#9#9'<NOME>VARIABLE</NOME>'#13#10#9#9#9#9'<TEXT>' +
+      'CorpoSMS</TEXT>'#13#10#9#9#9#9'<SQL>FALSE</SQL>'#13#10#9#9#9#9'<TIPO>Letras</TIPO>'#13#10 +
+      #9#9#9#9'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10#9#9#9#9'<MKR_VERSION>3.9.1.3' +
+      '</MKR_VERSION>'#13#10#9#9#9'</TObjVariable>'#13#10#9#9#9'<TObjConst>'#13#10#9#9#9#9'<ID>3</I' +
+      'D>'#13#10#9#9#9#9'<NOME>CONSTANT</NOME>'#13#10#9#9#9#9'<TEXT></TEXT>'#13#10#9#9#9#9'<SQL>FALSE' +
+      '</SQL>'#13#10#9#9#9#9'<TIPO>Letras</TIPO>'#13#10#9#9#9#9'<INCOMPATIVEL>FALSE</INCOMP' +
+      'ATIVEL>'#13#10#9#9#9#9'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10#9#9#9#9'<VALOR>'#13#10#9#9 +
+      #9#9'</VALOR>'#13#10#9#9#9#9'<DMLTYPE>dtSelect</DMLTYPE>'#13#10#9#9#9#9'<DIAGRAMXML></D' +
+      'IAGRAMXML>'#13#10#9#9#9#9'<NULO>FALSE</NULO>'#13#10#9#9#9#9'<FIELDINDEX>-1</FIELDIND' +
+      'EX>'#13#10#9#9#9#9'<GUID></GUID>'#13#10#9#9#9#9'<SPECIALCODE></SPECIALCODE>'#13#10#9#9#9'</TO' +
+      'bjConst>'#13#10#9#9#9'<TObjConst>'#13#10#9#9#9#9'<ID>4</ID>'#13#10#9#9#9#9'<NOME>CONSTANT</NO' +
+      'ME>'#13#10#9#9#9#9'<TEXT></TEXT>'#13#10#9#9#9#9'<SQL>FALSE</SQL>'#13#10#9#9#9#9'<TIPO>Letras</' +
+      'TIPO>'#13#10#9#9#9#9'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10#9#9#9#9'<MKR_VERSION>' +
+      '3.9.1.3</MKR_VERSION>'#13#10#9#9#9#9'<VALOR>%20</VALOR>'#13#10#9#9#9#9'<DMLTYPE>dtSe' +
+      'lect</DMLTYPE>'#13#10#9#9#9#9'<DIAGRAMXML></DIAGRAMXML>'#13#10#9#9#9#9'<NULO>FALSE</' +
+      'NULO>'#13#10#9#9#9#9'<FIELDINDEX>-1</FIELDINDEX>'#13#10#9#9#9#9'<GUID></GUID>'#13#10#9#9#9#9'<' +
+      'SPECIALCODE></SPECIALCODE>'#13#10#9#9#9'</TObjConst>'#13#10#9#9'</PARAMS>'#13#10#9'</TOb' +
+      'jFunction>'#13#10'</ROOT>'#13#10
+  end
+  object FlowExpression10: TFlowExpression
+    Left = 210
+    Top = 84
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine1'
+    OutputNames = 'FlowLine3'
+    Description = 'Obter Dados Sensiveis Celular'
+    Text = 'Abrir Consulta(SQL CONSULTA,)'
+    ReturnVar = 'DadosSensiveisCelular'
+    Expression = 
+      '<FUNCTION NAME="Abrir&#x20;Consulta" REALNAME="ebfSQLExecuteQuer' +
+      'y">'#13#10'<PARAMS>'#13#10'<CONSTANT TYPE="SQL&#x20;Consulta" NULL="FALSE"  ' +
+      '><PSQL>'#13#10'<COMMAND>'#13#10'Select'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd_' +
+      'dad_id,'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd_dad_host,'#13#10'&#x20;&#' +
+      'x20;crd_dados_sensiveis.crd_dad_senha'#13#10'From'#13#10'&#x20;&#x20;crd_dad' +
+      'os_sensiveis'#13#10'Where'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd_dad_id&' +
+      '#x20;=&#x20;9'#13#10#13#10#13#10'/*WHERE_ADD*/'#13#10'/*ORDER_NEW*/'#13#10'</COMMAND>'#13#10'<PA' +
+      'RAMS>'#13#10'</PARAMS>'#13#10'</PSQL>'#13#10'</CONSTANT>'#13#10'<CONSTANT TYPE="Letras" ' +
+      'NULL="TRUE"  ></CONSTANT>'#13#10'</PARAMS>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfSQLExecuteQuery' +
+      '</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Tabela</TIPO>'#13#10'<INCOMPATIVEL>FA' +
+      'LSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>' +
+      #13#10'<TObjConst>'#13#10'<ID>2</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13 +
+      #10'<SQL>FALSE</SQL>'#13#10'<TIPO>SQL&#x20;Consulta</TIPO>'#13#10'<INCOMPATIVEL' +
+      '>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALO' +
+      'R><PSQL>'#13#10'<COMMAND>'#13#10'Select'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd' +
+      '_dad_id,'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd_dad_host,'#13#10'&#x20;&' +
+      '#x20;crd_dados_sensiveis.crd_dad_senha'#13#10'From'#13#10'&#x20;&#x20;crd_da' +
+      'dos_sensiveis'#13#10'Where'#13#10'&#x20;&#x20;crd_dados_sensiveis.crd_dad_id' +
+      '&#x20;=&#x20;9'#13#10#13#10#13#10'/*WHERE_ADD*/'#13#10'/*ORDER_NEW*/'#13#10'</COMMAND>'#13#10'<P' +
+      'ARAMS>'#13#10'</PARAMS>'#13#10'</PSQL>'#13#10'</VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE' +
+      '>'#13#10'<DIAGRAMXML>PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iSVNPLTg4N' +
+      'TktMSI/Pg0KPFJPT1Q+DQo8U1FMPg0KU2VsZWN0DQomI3gyMDsmI3gyMDtjcmRfZ' +
+      'GFkb3Nfc2Vuc2l2ZWlzLmNyZF9kYWRfaWQsDQomI3gyMDsmI3gyMDtjcmRfZGFkb' +
+      '3Nfc2Vuc2l2ZWlzLmNyZF9kYWRfaG9zdCwNCiYjeDIwOyYjeDIwO2NyZF9kYWRvc' +
+      '19zZW5zaXZlaXMuY3JkX2RhZF9zZW5oYQ0KRnJvbQ0KJiN4MjA7JiN4MjA7Y3JkX' +
+      '2RhZG9zX3NlbnNpdmVpcw0KV2hlcmUNCiYjeDIwOyYjeDIwO2NyZF9kYWRvc19zZ' +
+      'W5zaXZlaXMuY3JkX2RhZF9pZCYjeDIwOz0mI3gyMDs5DQovKldIRVJFX0FERCovD' +
+      'QovKk9SREVSX05FVyovDQo8L1NRTD4NCg0KPFBBUkFNUz4NCjwvUEFSQU1TPg0KP' +
+      'C9ST09UPg0K</DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX>-1</FI' +
+      'ELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjCon' +
+      'st>'#13#10'<TObjConst>'#13#10'<ID>3</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEX' +
+      'T>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</' +
+      'INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR></VALO' +
+      'R>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NUL' +
+      'O>TRUE</NULO>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPEC' +
+      'IALCODE></SPECIALCODE>'#13#10'</TObjConst>'#13#10'</PARAMS>'#13#10'</TObjFunction>' +
+      #13#10'</ROOT>'#13#10
+  end
+  object FlowLine1: TFlowLine
+    Left = 75
+    Top = 92
+    Width = 230
+    Height = 41
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowStart1'
+    OutputNames = 'FlowExpression10'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowDecision1: TFlowDecision
+    Left = 400
+    Top = 308
+    Width = 150
+    Height = 60
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine9;FlowLine6'
+    OutputNames = 'FlowLine10;FlowLine4'
+    Description = #201' nulo?'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>isGreater</TEXT>'#13#10 +
+      '<SQL>FALSE</SQL>'#13#10'<TIPO>L&#243;gico</TIPO>'#13#10'<INCOMPATIVEL>FALSE<' +
+      '/INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13#10'<T' +
+      'ObjVariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>Contador<' +
+      '/TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Inteiro</TIPO>'#13#10'<INCOMPATIVEL>FA' +
+      'LSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'</TObjVa' +
+      'riable>'#13#10'<TObjVariable>'#13#10'<ID>3</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEX' +
+      'T>TamanhoLista</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Inteiro</TIPO>'#13#10'<' +
+      'INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VER' +
+      'SION>'#13#10'</TObjVariable>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'</ROOT>'#13#10
+    Expression = 
+      '<FUNCTION NAME="Maior" REALNAME="isGreater">'#13#10'<PARAMS>'#13#10'<VARIABL' +
+      'E NAME="Contador"/>'#13#10'<VARIABLE NAME="TamanhoLista"/>'#13#10'</PARAMS>'#13 +
+      #10'</FUNCTION>'
+    Loop = True
+  end
+  object FlowExpression1: TFlowExpression
+    Left = 400
+    Top = 234
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine2'
+    OutputNames = 'FlowLine6'
+    Description = 'Obtem Destinatario 1'
+    Text = 'Obter Objeto da Lista(@ListaDestinatarios,@Contador)'
+    ReturnVar = 'Destinatario'
+    Expression = 
+      '<FUNCTION NAME="Obter&#x20;Objeto&#x20;da&#x20;Lista" REALNAME="' +
+      'ebfGetElementFromList">'#13#10'<PARAMS>'#13#10'<VARIABLE NAME="ListaDestinat' +
+      'arios"/>'#13#10'<VARIABLE NAME="Contador"/>'#13#10'</PARAMS>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfGetElementFromL' +
+      'ist</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO>'#13#10'<INCOMPATIV' +
+      'EL>TRUE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PAR' +
+      'AMS>'#13#10'<TObjVariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>L' +
+      'istaDestinatarios</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO' +
+      '>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR' +
+      '_VERSION>'#13#10'</TObjVariable>'#13#10'<TObjVariable>'#13#10'<ID>3</ID>'#13#10'<NOME>VA' +
+      'RIABLE</NOME>'#13#10'<TEXT>Contador</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>In' +
+      'teiro</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3' +
+      '.9.1.3</MKR_VERSION>'#13#10'</TObjVariable>'#13#10'</PARAMS>'#13#10'</TObjFunction' +
+      '>'#13#10'</ROOT>'#13#10
+  end
+  object FlowExpression2: TFlowExpression
+    Left = 590
+    Top = 459
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine5'
+    OutputNames = 'FlowLine8'
+    Description = 'Contador ++'
+    Text = 'Soma(@Contador,1)'
+    ReturnVar = 'Contador'
+    Expression = 
+      '<FUNCTION NAME="Soma" REALNAME="oprAdd">'#13#10'<PARAMS>'#13#10'<VARIABLE NA' +
+      'ME="Contador"/>'#13#10'<CONSTANT TYPE="Fracionado" NULL="FALSE"  >1</C' +
+      'ONSTANT>'#13#10'</PARAMS>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>oprAdd</TEXT>'#13#10'<SQ' +
+      'L>FALSE</SQL>'#13#10'<TIPO>N&#250;mero</TIPO>'#13#10'<INCOMPATIVEL>TRUE</INC' +
+      'OMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13#10'<TObjV' +
+      'ariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>Contador</TEX' +
+      'T>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Inteiro</TIPO>'#13#10'<INCOMPATIVEL>FALSE<' +
+      '/INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'</TObjVariab' +
+      'le>'#13#10'<TObjConst>'#13#10'<ID>3</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEX' +
+      'T>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Fracionado</TIPO>'#13#10'<INCOMPATIVEL>FAL' +
+      'SE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR>1<' +
+      '/VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13 +
+      #10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13 +
+      #10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjConst>'#13#10'</PARAMS>'#13#10'</TObjFun' +
+      'ction>'#13#10'</ROOT>'#13#10
+  end
+  object FlowLine5: TFlowLine
+    Left = 455
+    Top = 468
+    Width = 230
+    Height = 40
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression15'
+    OutputNames = 'FlowExpression2'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowExpression3: TFlowExpression
+    Left = 590
+    Top = 309
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine8'
+    OutputNames = 'FlowLine9'
+    Description = 'Obtem Destinatario'
+    Text = 'Obter Objeto da Lista(@ListaDestinatarios,@Contador)'
+    ReturnVar = 'Destinatario'
+    Expression = 
+      '<FUNCTION NAME="Obter&#x20;Objeto&#x20;da&#x20;Lista" REALNAME="' +
+      'ebfGetElementFromList">'#13#10'<PARAMS>'#13#10'<VARIABLE NAME="ListaDestinat' +
+      'arios"/>'#13#10'<VARIABLE NAME="Contador"/>'#13#10'</PARAMS>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfGetElementFromL' +
+      'ist</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO>'#13#10'<INCOMPATIV' +
+      'EL>TRUE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PAR' +
+      'AMS>'#13#10'<TObjVariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>L' +
+      'istaDestinatarios</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO' +
+      '>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR' +
+      '_VERSION>'#13#10'</TObjVariable>'#13#10'<TObjVariable>'#13#10'<ID>3</ID>'#13#10'<NOME>VA' +
+      'RIABLE</NOME>'#13#10'<TEXT>Contador</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>In' +
+      'teiro</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3' +
+      '.9.1.3</MKR_VERSION>'#13#10'</TObjVariable>'#13#10'</PARAMS>'#13#10'</TObjFunction' +
+      '>'#13#10'</ROOT>'#13#10
+  end
+  object FlowLine8: TFlowLine
+    Left = 645
+    Top = 318
+    Width = 40
+    Height = 190
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression2'
+    OutputNames = 'FlowExpression3'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowLine9: TFlowLine
+    Left = 455
+    Top = 318
+    Width = 230
+    Height = 40
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression3'
+    OutputNames = 'FlowDecision1'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowEnd3: TFlowEnd
+    Left = 266
+    Top = 318
+    Width = 38
+    Height = 38
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowLine10'
+    Description = 'Fim'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjVariab' +
+      'le>'#13#10'<ID>1</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>Retorno</TEXT>'#13#10'<S' +
+      'QL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMP' +
+      'ATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'</TObjVariable>'#13#10'</' +
+      'ROOT>'#13#10
+    Expression = '<VARIABLE NAME="Retorno"/>'
+    Text = '@Retorno'
+    OutPutParam = 'Letras,50  '
+  end
+  object FlowLine10: TFlowLine
+    Left = 265
+    Top = 317
+    Width = 230
+    Height = 41
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowDecision1'
+    OutputNames = 'FlowEnd3'
+    Description = 'SIM'
+    Region = 0
+    Style = psSolid
+    Decision = True
+  end
+  object FlowLine2: TFlowLine
+    Left = 455
+    Top = 168
+    Width = 40
+    Height = 115
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression22'
+    OutputNames = 'FlowExpression1'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowExpression20: TFlowExpression
+    Left = 400
+    Top = 384
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine4'
+    OutputNames = 'FlowLine7'
+    Description = 'Monta URL SMS 1'
+    Text = 
+      'Trocar Todas as Subseq'#252#234'ncias(Concatena'#231#227'o(Campo(@DadosSensiveis' +
+      'Celular,crd_dad_host),numero=,@Destinatario,&str=,@CorpoSMS,&tok' +
+      'en=,Campo(@DadosSensiveisCelular,crd_dad_senha),&size=2),'#10#9#9#9#9',%' +
+      '20)'
+    ReturnVar = 'URLCompleta'
+    Expression = 
+      '<FUNCTION NAME="Trocar&#x20;Todas&#x20;as&#x20;Subseq&#252;&#234' +
+      ';ncias" REALNAME="ebfReplaceAll">'#13#10'<PARAMS>'#13#10'<FUNCTION NAME="Con' +
+      'catena&#231;&#227;o" REALNAME="ebfConcat">'#13#10'<PARAMS>'#13#10'<FUNCTION ' +
+      'NAME="Campo" REALNAME="ebfSQLField">'#13#10'<PARAMS>'#13#10'<VARIABLE NAME="' +
+      'DadosSensiveisCelular"/>'#13#10'<CONSTANT TYPE="Campo" NULL="FALSE" IN' +
+      'DEX = "1" >crd_dad_host</CONSTANT>'#13#10'</PARAMS>'#13#10'</FUNCTION>'#13#10'<CON' +
+      'STANT TYPE="Letras" NULL="FALSE"  >numero=</CONSTANT>'#13#10'<VARIABLE' +
+      ' NAME="Destinatario"/>'#13#10'<CONSTANT TYPE="Letras" NULL="FALSE"  >&' +
+      'amp;str=</CONSTANT>'#13#10'<VARIABLE NAME="CorpoSMS"/>'#13#10'<CONSTANT TYPE' +
+      '="Letras" NULL="FALSE"  >&amp;token=</CONSTANT>'#13#10'<FUNCTION NAME=' +
+      '"Campo" REALNAME="ebfSQLField">'#13#10'<PARAMS>'#13#10'<VARIABLE NAME="Dados' +
+      'SensiveisCelular"/>'#13#10'<CONSTANT TYPE="Campo" NULL="FALSE" INDEX =' +
+      ' "2" >crd_dad_senha</CONSTANT>'#13#10'</PARAMS>'#13#10'</FUNCTION>'#13#10'<CONSTAN' +
+      'T TYPE="Letras" NULL="FALSE"  >&amp;size=2</CONSTANT>'#13#10'</PARAMS>' +
+      #13#10'</FUNCTION>'#13#10'<CONSTANT TYPE="Letras" NULL="FALSE"  >'#13#10#9#9#9#9'</CO' +
+      'NSTANT>'#13#10'<CONSTANT TYPE="Letras" NULL="FALSE"  >%20</CONSTANT>'#13#10 +
+      '</PARAMS>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfReplaceAll</TEX' +
+      'T>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</' +
+      'INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13#10'<TO' +
+      'bjFunction>'#13#10'<ID>2</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfConcat<' +
+      '/TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FAL' +
+      'SE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13 +
+      #10'<TObjFunction>'#13#10'<ID>3</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfSQL' +
+      'Field</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO>'#13#10'<INCOMPAT' +
+      'IVEL>TRUE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<P' +
+      'ARAMS>'#13#10'<TObjVariable>'#13#10'<ID>4</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT' +
+      '>DadosSensiveisCelular</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Tabela</T' +
+      'IPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</' +
+      'MKR_VERSION>'#13#10'</TObjVariable>'#13#10'<TObjConst>'#13#10'<ID>5</ID>'#13#10'<NOME>CO' +
+      'NSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Campo</TIP' +
+      'O>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MK' +
+      'R_VERSION>'#13#10'<VALOR>crd_dad_host</VALOR>'#13#10'<DMLTYPE>dtSelect</DMLT' +
+      'YPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX' +
+      '>1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</T' +
+      'ObjConst>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'<TObjConst>'#13#10'<ID>6</ID>'#13#10 +
+      '<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Le' +
+      'tras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.' +
+      '9.1.3</MKR_VERSION>'#13#10'<VALOR>numero=</VALOR>'#13#10'<DMLTYPE>dtSelect</' +
+      'DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDI' +
+      'NDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>' +
+      #13#10'</TObjConst>'#13#10'<TObjVariable>'#13#10'<ID>7</ID>'#13#10'<NOME>VARIABLE</NOME' +
+      '>'#13#10'<TEXT>Destinatario</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TI' +
+      'PO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</M' +
+      'KR_VERSION>'#13#10'</TObjVariable>'#13#10'<TObjConst>'#13#10'<ID>10</ID>'#13#10'<NOME>CO' +
+      'NSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TI' +
+      'PO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</M' +
+      'KR_VERSION>'#13#10'<VALOR>&amp;str=</VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYP' +
+      'E>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX>-' +
+      '1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TO' +
+      'bjConst>'#13#10'<TObjVariable>'#13#10'<ID>11</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<T' +
+      'EXT>CorpoSMS</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INC' +
+      'OMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSIO' +
+      'N>'#13#10'</TObjVariable>'#13#10'<TObjConst>'#13#10'<ID>12</ID>'#13#10'<NOME>CONSTANT</N' +
+      'OME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INC' +
+      'OMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSIO' +
+      'N>'#13#10'<VALOR>&amp;token=</VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10'<DI' +
+      'AGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX>-1</FIEL' +
+      'DINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjConst' +
+      '>'#13#10'<TObjFunction>'#13#10'<ID>13</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebf' +
+      'SQLField</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO>'#13#10'<INCOM' +
+      'PATIVEL>TRUE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13 +
+      #10'<PARAMS>'#13#10'<TObjVariable>'#13#10'<ID>14</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<' +
+      'TEXT>DadosSensiveisCelular</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Tabel' +
+      'a</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1' +
+      '.3</MKR_VERSION>'#13#10'</TObjVariable>'#13#10'<TObjConst>'#13#10'<ID>15</ID>'#13#10'<NO' +
+      'ME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Campo' +
+      '</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.' +
+      '3</MKR_VERSION>'#13#10'<VALOR>crd_dad_senha</VALOR>'#13#10'<DMLTYPE>dtSelect' +
+      '</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIEL' +
+      'DINDEX>2</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE' +
+      '>'#13#10'</TObjConst>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'<TObjConst>'#13#10'<ID>16' +
+      '</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<' +
+      'TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VER' +
+      'SION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR>&amp;size=2</VALOR>'#13#10'<DMLTYPE' +
+      '>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NUL' +
+      'O>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></S' +
+      'PECIALCODE>'#13#10'</TObjConst>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'<TObjCons' +
+      't>'#13#10'<ID>17</ID>'#13#10'<NOME>CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALS' +
+      'E</SQL>'#13#10'<TIPO>Letras</TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>' +
+      #13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<VALOR>'#13#10#9#9#9#9'</VALOR>'#13#10'<DM' +
+      'LTYPE>dtSelect</DMLTYPE>'#13#10'<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE' +
+      '</NULO>'#13#10'<FIELDINDEX>-1</FIELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCOD' +
+      'E></SPECIALCODE>'#13#10'</TObjConst>'#13#10'<TObjConst>'#13#10'<ID>18</ID>'#13#10'<NOME>' +
+      'CONSTANT</NOME>'#13#10'<TEXT></TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Letras</' +
+      'TIPO>'#13#10'<INCOMPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3<' +
+      '/MKR_VERSION>'#13#10'<VALOR>%20</VALOR>'#13#10'<DMLTYPE>dtSelect</DMLTYPE>'#13#10 +
+      '<DIAGRAMXML></DIAGRAMXML>'#13#10'<NULO>FALSE</NULO>'#13#10'<FIELDINDEX>-1</F' +
+      'IELDINDEX>'#13#10'<GUID></GUID>'#13#10'<SPECIALCODE></SPECIALCODE>'#13#10'</TObjCo' +
+      'nst>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'</ROOT>'#13#10
+  end
+  object FlowLine4: TFlowLine
+    Left = 455
+    Top = 318
+    Width = 64
+    Height = 115
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowDecision1'
+    OutputNames = 'FlowExpression20'
+    Description = 'N'#195'O'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowLine7: TFlowLine
+    Left = 455
+    Top = 393
+    Width = 40
+    Height = 115
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression20'
+    OutputNames = 'FlowExpression15'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowLine6: TFlowLine
+    Left = 455
+    Top = 243
+    Width = 40
+    Height = 115
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression1'
+    OutputNames = 'FlowDecision1'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowExpression4: TFlowExpression
+    Left = 400
+    Top = 84
+    Width = 150
+    Height = 57
+    Constraints.MaxHeight = 600
+    Constraints.MaxWidth = 600
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = True
+    InputNames = 'FlowLine3'
+    OutputNames = 'FlowLine11'
+    Description = 'Obtem tamanho da lista'
+    Text = 'Tamanho da Lista(@ListaDestinatarios)'
+    ReturnVar = 'TamanhoLista'
+    Expression = 
+      '<FUNCTION NAME="Tamanho&#x20;da&#x20;Lista" REALNAME="ebfListLen' +
+      'gth">'#13#10'<PARAMS>'#13#10'<VARIABLE NAME="ListaDestinatarios"/>'#13#10'</PARAMS' +
+      '>'#13#10'</FUNCTION>'
+    DiagramXml = 
+      '<?xml version="1.0" encoding="ISO-8859-1"?>'#13#10'<ROOT>'#13#10'<TObjFuncti' +
+      'on>'#13#10'<ID>1</ID>'#13#10'<NOME>FUNCTION</NOME>'#13#10'<TEXT>ebfListLength</TEX' +
+      'T>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Inteiro</TIPO>'#13#10'<INCOMPATIVEL>FALSE<' +
+      '/INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION>'#13#10'<PARAMS>'#13#10'<T' +
+      'ObjVariable>'#13#10'<ID>2</ID>'#13#10'<NOME>VARIABLE</NOME>'#13#10'<TEXT>ListaDest' +
+      'inatarios</TEXT>'#13#10'<SQL>FALSE</SQL>'#13#10'<TIPO>Variante</TIPO>'#13#10'<INCO' +
+      'MPATIVEL>FALSE</INCOMPATIVEL>'#13#10'<MKR_VERSION>3.9.1.3</MKR_VERSION' +
+      '>'#13#10'</TObjVariable>'#13#10'</PARAMS>'#13#10'</TObjFunction>'#13#10'</ROOT>'#13#10
+  end
+  object FlowLine3: TFlowLine
+    Left = 265
+    Top = 93
+    Width = 230
+    Height = 40
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression10'
+    OutputNames = 'FlowExpression4'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+  object FlowLine11: TFlowLine
+    Left = 455
+    Top = 93
+    Width = 40
+    Height = 115
+    Color = clWhite
+    Constraints.MinHeight = 9
+    Constraints.MinWidth = 9
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ChangeDescription = False
+    InputNames = 'FlowExpression4'
+    OutputNames = 'FlowExpression22'
+    Region = 0
+    Style = psSolid
+    Decision = False
+  end
+end

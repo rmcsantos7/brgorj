@@ -4,9 +4,33 @@
  */
 
 const creditosService = require('../services/creditos.service');
+const creditosRepository = require('../repositories/creditos.repository');
 const { asyncHandler, APIError } = require('../middlewares/errorHandler');
 const { extractClienteId } = require('../utils/validators');
 const logger = require('../utils/logger');
+
+/**
+ * Garante que o usuário autenticado tem acesso à nota fiscal antes de
+ * deixar o proxy do Hub-BaaS servir o boleto/QR. Admins têm acesso total.
+ */
+const autorizarAcessoNota = async (req, notaId) => {
+  const donoClienteId = await creditosRepository.buscarClienteIdDaNota(notaId);
+  if (!donoClienteId) {
+    throw new APIError('Nota fiscal não encontrada', 404);
+  }
+  const isAdmin = req.usuario?.administrador;
+  const clienteIdJWT = Number(req.usuario?.cliente_id);
+  if (isAdmin) return;
+  if (donoClienteId !== clienteIdJWT) {
+    logger.warn('Tentativa de acesso a boleto de outro cliente:', {
+      usuario: req.usuario?.codigo,
+      donoClienteId,
+      clienteIdJWT,
+      notaId
+    });
+    throw new APIError('Acesso negado a este boleto', 403);
+  }
+};
 
 /**
  * POST /api/creditos/gerar?cliente_id=1
@@ -95,6 +119,8 @@ const obterBoletoPdf = asyncHandler(async (req, res) => {
     throw new APIError('nota_id inválido', 400);
   }
 
+  await autorizarAcessoNota(req, notaId);
+
   const baseUrl = process.env.BASE_URL_HUB_BAAS || 'http://localhost:5003';
   const idOperacao = process.env.HUB_BAAS_ID_OPERACAO || 'BOLETO_EFI';
   const token = process.env.HUB_BAAS_TOKEN || '';
@@ -110,8 +136,6 @@ const obterBoletoPdf = asyncHandler(async (req, res) => {
 
   res.setHeader('Content-Type', response.headers.get('content-type') || 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="boleto-${notaId}.pdf"`);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
   const buffer = await response.arrayBuffer();
   return res.send(Buffer.from(buffer));
@@ -128,6 +152,8 @@ const obterBoletoQrCode = asyncHandler(async (req, res) => {
     throw new APIError('nota_id inválido', 400);
   }
 
+  await autorizarAcessoNota(req, notaId);
+
   const baseUrl = process.env.BASE_URL_HUB_BAAS || 'http://localhost:5003';
   const idOperacao = process.env.HUB_BAAS_ID_OPERACAO || 'BOLETO_EFI';
   const token = process.env.HUB_BAAS_TOKEN || '';
@@ -143,9 +169,7 @@ const obterBoletoQrCode = asyncHandler(async (req, res) => {
 
   const contentType = response.headers.get('content-type') || 'image/svg+xml';
   res.setHeader('Content-Type', contentType);
-  res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cache-Control', 'private, max-age=3600');
 
   const buffer = await response.arrayBuffer();
   return res.send(Buffer.from(buffer));

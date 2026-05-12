@@ -404,6 +404,30 @@ const buscarNotaFiscalPorRemessa = async (remessaId, clienteId) => {
 };
 
 /**
+ * Retorna o crd_cli_id dono de uma nota fiscal. Usado para autorização
+ * dos endpoints de boleto (PDF/QR), que precisam validar tenant antes
+ * de fazer proxy para o Hub-BaaS.
+ *
+ * @param {number} notaId
+ * @returns {Promise<number|null>}
+ */
+const buscarClienteIdDaNota = async (notaId) => {
+  const sql = `
+    SELECT DISTINCT c.crd_cli_id
+    FROM crd_usuario_credito c
+    WHERE c.crd_not_id = $1
+    LIMIT 1
+  `;
+  try {
+    const result = await db.query(sql, [notaId]);
+    return result.rows.length > 0 ? Number(result.rows[0].crd_cli_id) : null;
+  } catch (error) {
+    logger.error('Erro ao buscar cliente_id da nota:', { error: error.message });
+    throw error;
+  }
+};
+
+/**
  * Cancela todos os créditos de uma remessa (crd_sit_id = 3)
  */
 const cancelarCreditosPorRemessa = async (client, remessaId, clienteId) => {
@@ -532,6 +556,7 @@ module.exports = {
   buscarHistorico,
   buscarDetalheRemessa,
   buscarNotaFiscalPorRemessa,
+  buscarClienteIdDaNota,
   cancelarCreditosPorRemessa,
   cancelarRemessaRepo,
   cancelarNotaFiscal,

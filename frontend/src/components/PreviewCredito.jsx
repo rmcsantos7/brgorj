@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { creditosAPI } from '../services/api';
+import { BoletoPdfLink, BoletoQrCode } from './BoletoMedia';
 import CurrencyInput from './CurrencyInput';
 
 const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVoltar, onSucesso, creditoHook, taxa = 0 }) => {
@@ -273,8 +274,8 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
 
               {/* QR Code Image */}
               <div style={{ marginBottom: '16px' }}>
-                <img
-                  src={creditosAPI.getBoletoQrCodeUrl(sucesso.nota_fiscal_id)}
+                <BoletoQrCode
+                  notaId={sucesso.nota_fiscal_id}
                   alt="QR Code PIX"
                   style={{
                     width: '220px',
@@ -351,10 +352,8 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
               )}
 
               {/* Botão baixar PDF */}
-              <a
-                href={creditosAPI.getBoletoPdfUrl(sucesso.nota_fiscal_id)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <BoletoPdfLink
+                notaId={sucesso.nota_fiscal_id}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -367,7 +366,6 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
                   background: '#f3e8ff',
                   border: '1px solid #d8b4fe',
                   borderRadius: '8px',
-                  textDecoration: 'none',
                   cursor: 'pointer'
                 }}
               >
@@ -375,7 +373,7 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
                 Visualizar Boleto PDF
-              </a>
+              </BoletoPdfLink>
             </div>
           )}
 

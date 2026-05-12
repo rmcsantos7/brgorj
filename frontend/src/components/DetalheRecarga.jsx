@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { creditosAPI } from '../services/api';
+import { BoletoPdfLink, BoletoQrCode } from './BoletoMedia';
 import { gerarPdfRemessa } from '../utils/pdfGenerator';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -185,18 +186,16 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
                 </svg>
                 QR Code PIX
               </button>
-              <a
-                href={creditosAPI.getBoletoPdfUrl(dados.boleto.nota_fiscal_id)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <BoletoPdfLink
+                notaId={dados.boleto.nota_fiscal_id}
                 className="btn-secundario"
-                style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
                 Visualizar Boleto
-              </a>
+              </BoletoPdfLink>
             </>
           )}
           <button className="btn-secundario" style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -529,8 +528,8 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
 
             {/* QR Code Image */}
             <div style={{ marginBottom: '16px' }}>
-              <img
-                src={creditosAPI.getBoletoQrCodeUrl(dados.boleto.nota_fiscal_id)}
+              <BoletoQrCode
+                notaId={dados.boleto.nota_fiscal_id}
                 alt="QR Code PIX"
                 style={{ width: '220px', height: '220px', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '8px', background: '#fff' }}
               />
