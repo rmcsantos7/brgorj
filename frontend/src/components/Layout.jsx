@@ -105,9 +105,10 @@ function Layout() {
   const clientesInicialFiltrados = clientesInicial.filter(c => {
     if (!buscaInicial.trim()) return true;
     const termo = buscaInicial.toLowerCase();
+    const termoDigitos = termo.replace(/\D/g, '');
     const nome = (c.crd_cli_nome_fantasia || '').toLowerCase();
     const cnpj = (c.crd_cli_cnpj || '').replace(/\D/g, '');
-    return nome.includes(termo) || cnpj.includes(termo.replace(/\D/g, ''));
+    return nome.includes(termo) || (termoDigitos.length > 0 && cnpj.includes(termoDigitos));
   });
 
   const confirmarSelecaoInicial = async (clienteId) => {
@@ -203,9 +204,10 @@ function Layout() {
   const clientesFiltrados = clientes.filter(c => {
     if (!buscaCliente.trim()) return true;
     const termo = buscaCliente.toLowerCase();
+    const termoDigitos = termo.replace(/\D/g, '');
     const nome = (c.crd_cli_nome_fantasia || '').toLowerCase();
     const cnpj = (c.crd_cli_cnpj || '').replace(/\D/g, '');
-    return nome.includes(termo) || cnpj.includes(termo.replace(/\D/g, ''));
+    return nome.includes(termo) || (termoDigitos.length > 0 && cnpj.includes(termoDigitos));
   });
 
   return (
