@@ -32,9 +32,8 @@ const STATUS_LABEL = {
 
 /**
  * Relatório 1: Recargas no período
- * Retorna remessas dentro de um intervalo de datas com status, datas de
- * agendamento/pagamento e totais quebrados por categoria (efetuado, cancelado,
- * pendente). Recargas canceladas não compõem o valor efetuado.
+ * Retorna apenas remessas pagas dentro de um intervalo de datas. Remessas
+ * canceladas, com erro, pendentes ou vencidas são excluídas do relatório.
  */
 const buscarRecargasPeriodo = async (clienteId, dataInicio, dataFim) => {
   // Info do cliente
@@ -77,18 +76,20 @@ const buscarRecargasPeriodo = async (clienteId, dataInicio, dataFim) => {
     ]);
 
     const cliente = clienteRes.rows[0] || {};
-    const remessas = remessasRes.rows.map(row => {
-      const status = determinarStatusRemessa(row);
-      return {
-        remessa_id: row.remessa_id,
-        data_recarga: row.data_recarga,
-        data_vencimento: row.data_vencimento,
-        data_pagamento: row.data_pagamento,
-        valor_recarga: parseFloat(row.valor_recarga || 0),
-        status,
-        status_label: STATUS_LABEL[status]
-      };
-    });
+    const remessas = remessasRes.rows
+      .map(row => {
+        const status = determinarStatusRemessa(row);
+        return {
+          remessa_id: row.remessa_id,
+          data_recarga: row.data_recarga,
+          data_vencimento: row.data_vencimento,
+          data_pagamento: row.data_pagamento,
+          valor_recarga: parseFloat(row.valor_recarga || 0),
+          status,
+          status_label: STATUS_LABEL[status]
+        };
+      })
+      .filter(r => r.status === 'pago');
 
     const valorEfetuado = remessas.filter(r => r.status === 'pago').reduce((acc, r) => acc + r.valor_recarga, 0);
     const valorCancelado = remessas.filter(r => r.status === 'cancelado' || r.status === 'erro').reduce((acc, r) => acc + r.valor_recarga, 0);
