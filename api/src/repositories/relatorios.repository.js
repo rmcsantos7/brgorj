@@ -175,7 +175,10 @@ const buscarColaboradoresCadastrados = async (clienteId) => {
 
 /**
  * Relatório 3: Histórico total por colaborador
- * Retorna créditos de um colaborador agrupados por mês
+ * Retorna créditos de um colaborador agrupados por mês. Apenas créditos
+ * vindos de remessas pagas são considerados (mesma regra do relatório de
+ * recargas): a remessa precisa ter pelo menos uma NF com boleto em
+ * paid/settled — canceladas, pendentes e vencidas ficam de fora.
  */
 const buscarHistoricoColaborador = async (clienteId, colaboradorId, dataInicio, dataFim) => {
   const clienteSql = `
@@ -205,6 +208,13 @@ const buscarHistoricoColaborador = async (clienteId, colaboradorId, dataInicio, 
       AND c.crd_cli_id = $2
       AND c.crd_usu_data_credito >= $3::date
       AND c.crd_usu_data_credito < ($4::date + INTERVAL '1 day')
+      AND EXISTS (
+        SELECT 1
+        FROM crd_usuario_credito c2
+        INNER JOIN crd_nota_fiscal nf ON nf.crd_not_id = c2.crd_not_id
+        WHERE c2.crd_usucrerem_id = c.crd_usucrerem_id
+          AND LOWER(nf.crd_not_boleto_status) IN ('paid', 'settled')
+      )
     ORDER BY c.crd_usu_data_credito DESC
   `;
 
