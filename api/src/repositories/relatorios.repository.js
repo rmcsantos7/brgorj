@@ -51,7 +51,15 @@ const buscarRecargasPeriodo = async (clienteId, dataInicio, dataFim) => {
       r.crd_usucrerem_id AS remessa_id,
       r.crd_usu_data_import AS data_recarga,
       r.crd_rem_status AS rem_status,
-      COALESCE(SUM(c.crd_usu_valor), 0) AS valor_recarga,
+      -- Valor pago pelo restaurante = valor da nota fiscal/boleto. Já reflete o
+      -- tipo de taxa (tipo 'A' grava bruto + taxa; 'D' grava o bruto). Usa a NF
+      -- ativa; cai para a soma dos créditos quando não há NF.
+      COALESCE(
+        MAX(nf.crd_not_valor_nota_fiscal) FILTER (WHERE nf.crd_not_situacao = 'A'),
+        MAX(nf.crd_not_valor_nota_fiscal),
+        SUM(c.crd_usu_valor),
+        0
+      ) AS valor_recarga,
       MAX(nf.crd_not_data_vencimento) AS data_vencimento,
       COALESCE(
         MAX(nf.crd_not_boleto_status) FILTER (WHERE nf.crd_not_situacao = 'A'),

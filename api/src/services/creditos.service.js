@@ -270,15 +270,28 @@ const gerarCredito = async (payload, login = 'sistema') => {
     // 4. Gera nota fiscal vinculada à remessa
     let notaFiscalId = null;
     if (creditosCriados.length > 0) {
-      const taxa = await colaboradoresRepository.buscarTaxaCliente(clienteId);
+      const { taxa, tipo } = await colaboradoresRepository.buscarTaxaCliente(clienteId);
       const valorBruto = Math.round(valorTotal * 100) / 100;
       const valorServico = Math.round(valorTotal * taxa / 100 * 100) / 100;
+
+      // Tipo 'A' (acréscimo): o restaurante paga a taxa por cima — o boleto fica
+      // bruto + taxa e os colaboradores recebem o valor cheio (bruto).
+      // Tipo 'D' (desconto, padrão): a taxa sai do colaborador — o boleto fica
+      // igual ao bruto e a movimentação aos colaboradores é bruto - taxa.
+      const isAcrescimo = tipo === 'A';
+      const valorNotaFiscal = isAcrescimo
+        ? Math.round((valorBruto + valorServico) * 100) / 100
+        : valorBruto;
+      const valorMovimentacao = isAcrescimo
+        ? valorBruto
+        : Math.round((valorBruto - valorServico) * 100) / 100;
 
       notaFiscalId = await creditosRepository.criarNotaFiscal(
         client,
         clienteId,
-        valorBruto,
-        valorServico
+        valorNotaFiscal,
+        valorServico,
+        valorMovimentacao
       );
 
       // 4.1. Associa todos os créditos da remessa à nota criada (crd_not_id)
@@ -415,6 +428,8 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
     }
 
     const taxa = detalhes.length > 0 ? parseFloat(detalhes[0].taxa) || 0 : 0;
+    const tipoTaxa = detalhes.length > 0 && detalhes[0].tipo_taxa === 'A' ? 'A' : 'D';
+    const isAcrescimo = tipoTaxa === 'A';
     const meta = detalhes.length > 0 ? {
       criado_por: detalhes[0].criado_por,
       data_criacao: detalhes[0].data_criacao,
@@ -435,11 +450,13 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
       status: detalhes[0].boleto_status
     } : null;
 
-    // Valor no banco = bruto (o que o usuário digitou)
-    // Líquido = bruto - (bruto * taxa / 100)
+    // Valor gravado por colaborador (crd_usu_valor) = valor digitado na recarga.
+    // Líquido = o que o colaborador efetivamente recebe:
+    //  - tipo 'A' (acréscimo): recebe o valor cheio (taxa é paga pelo restaurante);
+    //  - tipo 'D' (desconto): recebe bruto - taxa.
     const colaboradores = detalhes.map(d => {
       const valorBruto = parseFloat(d.valor_bruto) || 0;
-      const valorLiquido = taxa > 0
+      const valorLiquido = (taxa > 0 && !isAcrescimo)
         ? Math.round((valorBruto - (valorBruto * taxa / 100)) * 100) / 100
         : valorBruto;
       return {
@@ -453,16 +470,29 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
       };
     });
 
-    const totalBruto = colaboradores.reduce((s, c) => s + c.valor_bruto, 0);
-    const totalLiquido = colaboradores.reduce((s, c) => s + c.valor_liquido, 0);
+    const totalBruto = Math.round(colaboradores.reduce((s, c) => s + c.valor_bruto, 0) * 100) / 100;
+    const totalLiquido = Math.round(colaboradores.reduce((s, c) => s + c.valor_liquido, 0) * 100) / 100;
+
+    // Valor da taxa e valor do boleto (o que o restaurante paga):
+    //  - 'A': boleto = bruto + taxa; colaboradores recebem o bruto.
+    //  - 'D': boleto = bruto;        colaboradores recebem bruto - taxa.
+    const valorTaxa = isAcrescimo
+      ? Math.round(totalBruto * taxa / 100 * 100) / 100
+      : Math.round((totalBruto - totalLiquido) * 100) / 100;
+    const valorBoleto = isAcrescimo
+      ? Math.round((totalBruto + valorTaxa) * 100) / 100
+      : totalBruto;
 
     return ok({
       remessa_id: remessaId,
       taxa,
+      tipo_taxa: tipoTaxa,
       ...meta,
       total_colaboradores: colaboradores.length,
-      valor_bruto: Math.round(totalBruto * 100) / 100,
-      valor_liquido: Math.round(totalLiquido * 100) / 100,
+      valor_bruto: totalBruto,
+      valor_liquido: totalLiquido,
+      valor_taxa: valorTaxa,
+      valor_boleto: valorBoleto,
       boleto,
       colaboradores
     });

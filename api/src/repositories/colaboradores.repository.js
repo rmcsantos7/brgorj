@@ -260,19 +260,25 @@ const buscarColaboradoresParaPlanilha = async (clienteId) => {
 };
 
 /**
- * Busca taxa de manutenção (desconto) do cliente
+ * Busca a taxa do cliente e o tipo de aplicação dela.
+ * - taxa: percentual (crd_cli_manutencao_usuario)
+ * - tipo: 'D' = desconto (sai do colaborador, boleto = bruto)
+ *         'A' = acréscimo (restaurante paga por cima, boleto = bruto + taxa)
+ * Clientes sem tipo definido seguem o comportamento histórico ('D').
  */
 const buscarTaxaCliente = async (clienteId) => {
   const sql = `
-    SELECT COALESCE(crd_cli_manutencao_usuario, 0) AS taxa
+    SELECT COALESCE(crd_cli_manutencao_usuario, 0) AS taxa,
+           COALESCE(NULLIF(crd_cli_tipo_taxa, ''), 'D') AS tipo
     FROM crd_cliente
     WHERE crd_cli_id = $1
   `;
 
   try {
     const result = await db.query(sql, [clienteId]);
-    if (result.rows.length === 0) return 0;
-    return parseFloat(result.rows[0].taxa) || 0;
+    if (result.rows.length === 0) return { taxa: 0, tipo: 'D' };
+    const tipo = result.rows[0].tipo === 'A' ? 'A' : 'D';
+    return { taxa: parseFloat(result.rows[0].taxa) || 0, tipo };
   } catch (error) {
     logger.error('Erro ao buscar taxa do cliente:', { error: error.message });
     throw error;

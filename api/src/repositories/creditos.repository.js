@@ -112,6 +112,7 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
       r.crd_rem_status AS status,
       cli.crd_cli_nome_fantasia AS restaurante,
       COALESCE(cli.crd_cli_manutencao_usuario, 0) AS taxa,
+      COALESCE(NULLIF(cli.crd_cli_tipo_taxa, ''), 'D') AS tipo_taxa,
       r.crd_usucrerem_titulo AS titulo,
       COUNT(c.crd_usucre_id) AS total_colaboradores,
       COALESCE(SUM(c.crd_usu_valor), 0) AS valor_bruto,
@@ -144,7 +145,7 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
   }
 
   sql += `
-    GROUP BY r.crd_usucrerem_id, r.crd_usu_data_import, r.crd_usu_login, r.crd_rem_status, cli.crd_cli_nome_fantasia, cli.crd_cli_manutencao_usuario, r.crd_usucrerem_titulo, nf.crd_not_id, nf.crd_not_boleto_status, nf.crd_not_qr_code, nf.crd_not_linha_digitavel_boleto
+    GROUP BY r.crd_usucrerem_id, r.crd_usu_data_import, r.crd_usu_login, r.crd_rem_status, cli.crd_cli_nome_fantasia, cli.crd_cli_manutencao_usuario, cli.crd_cli_tipo_taxa, r.crd_usucrerem_titulo, nf.crd_not_id, nf.crd_not_boleto_status, nf.crd_not_qr_code, nf.crd_not_linha_digitavel_boleto
     ORDER BY r.crd_usucrerem_id DESC
     LIMIT $${paramCount} OFFSET $${paramCount + 1}
   `;
@@ -207,6 +208,7 @@ const buscarDetalheRemessa = async (remessaId, clienteId) => {
       c.crd_usu_valor AS valor_bruto,
       c.crd_usu_data_credito AS data_credito,
       COALESCE(cli.crd_cli_manutencao_usuario, 0) AS taxa,
+      COALESCE(NULLIF(cli.crd_cli_tipo_taxa, ''), 'D') AS tipo_taxa,
       r.crd_usu_login AS criado_por,
       r.crd_usu_data_import AS data_criacao,
       r.crd_rem_status AS status,
@@ -246,11 +248,14 @@ const buscarDetalheRemessa = async (remessaId, clienteId) => {
  *
  * @param {object} client - Client de transação
  * @param {number} clienteId - ID do cliente
- * @param {number} valorBruto - Valor bruto total (soma dos créditos)
- * @param {number} valorServico - Valor do serviço (valorBruto * taxa / 100)
+ * @param {number} valorNotaFiscal - Valor do boleto que o restaurante paga
+ *   (taxa 'D': = bruto; taxa 'A': = bruto + serviço)
+ * @param {number} valorServico - Valor da taxa (bruto * taxa / 100)
+ * @param {number} valorMovimentacao - Valor distribuído aos colaboradores
+ *   (taxa 'D': = bruto - serviço; taxa 'A': = bruto)
  * @returns {Promise<number>} ID da nota fiscal criada
  */
-const criarNotaFiscal = async (client, clienteId, valorBruto, valorServico) => {
+const criarNotaFiscal = async (client, clienteId, valorNotaFiscal, valorServico, valorMovimentacao) => {
   const sql = `
     INSERT INTO crd_nota_fiscal (
       crd_cli_id,
@@ -275,12 +280,12 @@ const criarNotaFiscal = async (client, clienteId, valorBruto, valorServico) => {
   try {
     const result = await client.query(sql, [
       clienteId,
-      valorBruto,
+      valorNotaFiscal,
       valorServico,
-      valorBruto - valorServico
+      valorMovimentacao
     ]);
     const id = result.rows[0].crd_not_id;
-    logger.info('Nota fiscal criada:', { notaId: id, clienteId, valorBruto, valorServico });
+    logger.info('Nota fiscal criada:', { notaId: id, clienteId, valorNotaFiscal, valorServico, valorMovimentacao });
     return id;
   } catch (error) {
     logger.error('Erro ao criar nota fiscal:', { error: error.message });

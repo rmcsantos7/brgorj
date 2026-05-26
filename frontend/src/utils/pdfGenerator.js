@@ -571,7 +571,11 @@ export const gerarPdfHistoricoColaborador = (dados) => {
 
 export const gerarPdfRemessa = (dados) => {
   const temTaxa = (dados.taxa || 0) > 0;
-  const orientation = temTaxa ? 'landscape' : 'portrait';
+  // 'A' = acréscimo (taxa paga pelo restaurante; boleto = bruto + taxa)
+  const isAcrescimo = dados.tipo_taxa === 'A';
+  // Só o desconto ('D') tem colunas por colaborador; no acréscimo cada um recebe o cheio.
+  const mostrarColunasDesconto = temTaxa && !isAcrescimo;
+  const orientation = mostrarColunasDesconto ? 'landscape' : 'portrait';
   const doc = new jsPDF(orientation, 'pt', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -622,15 +626,24 @@ export const gerarPdfRemessa = (dados) => {
   const taxa = dados.taxa || 0;
   const valorBruto = parseFloat(dados.valor_bruto) || 0;
   const valorLiquido = parseFloat(dados.valor_liquido) || 0;
-  const totalDesconto = temTaxa ? Math.round((valorBruto - valorLiquido) * 100) / 100 : 0;
+  const valorBoleto = dados.valor_boleto != null ? parseFloat(dados.valor_boleto) : valorBruto;
+  const totalDesconto = dados.valor_taxa != null
+    ? parseFloat(dados.valor_taxa)
+    : (temTaxa ? Math.round((valorBruto - valorLiquido) * 100) / 100 : 0);
 
   const finCards = [
-    { label: 'Valor Bruto', value: formatarMoeda(valorBruto), color: CORES.cinzaEscuro }
+    isAcrescimo
+      ? { label: 'Colaboradores Recebem', value: formatarMoeda(valorLiquido), color: CORES.cinzaEscuro }
+      : { label: 'Valor Bruto', value: formatarMoeda(valorBruto), color: CORES.cinzaEscuro }
   ];
   if (temTaxa) {
-    finCards.push({ label: `Tar. Conv. (${taxa}%)`, value: `- ${formatarMoeda(totalDesconto)}`, color: CORES.vermelho });
+    finCards.push({ label: `Tar. Conv. (${taxa}%)`, value: `${isAcrescimo ? '+' : '-'} ${formatarMoeda(totalDesconto)}`, color: CORES.vermelho });
   }
-  finCards.push({ label: 'Valor Liquido', value: formatarMoeda(valorLiquido), color: CORES.roxo });
+  finCards.push(
+    isAcrescimo
+      ? { label: 'Valor do Boleto', value: formatarMoeda(valorBoleto), color: CORES.roxo }
+      : { label: 'Valor Liquido', value: formatarMoeda(valorLiquido), color: CORES.roxo }
+  );
 
   const finCardW = Math.min(180, (pageWidth - 40 - (finCards.length - 1) * 12) / finCards.length);
   const totalFinW = finCards.length * finCardW + (finCards.length - 1) * 12;
@@ -658,7 +671,7 @@ export const gerarPdfRemessa = (dados) => {
   // Tabela de colaboradores
   const colaboradores = dados.colaboradores || [];
   if (colaboradores.length > 0) {
-    const headRow = temTaxa
+    const headRow = mostrarColunasDesconto
       ? ['#', 'Nome', 'CPF', 'Valor Bruto', 'Tar. Conv.', 'Valor Liquido']
       : ['#', 'Nome', 'CPF', 'Valor'];
 
@@ -667,7 +680,7 @@ export const gerarPdfRemessa = (dados) => {
       const liquido = parseFloat(c.valor_liquido) || 0;
       const desc = bruto - liquido;
 
-      if (temTaxa) {
+      if (mostrarColunasDesconto) {
         return [
           String(idx + 1),
           c.nome || '-',
@@ -685,11 +698,11 @@ export const gerarPdfRemessa = (dados) => {
       ];
     });
 
-    const footRow = temTaxa
+    const footRow = mostrarColunasDesconto
       ? ['', '', 'TOTAIS', formatarMoeda(valorBruto), `- ${formatarMoeda(totalDesconto)}`, formatarMoeda(valorLiquido)]
       : ['', '', 'TOTAIS', formatarMoeda(valorLiquido)];
 
-    const colStyles = temTaxa
+    const colStyles = mostrarColunasDesconto
       ? {
           0: { halign: 'center', cellWidth: 30 },
           1: { cellWidth: 'auto' },

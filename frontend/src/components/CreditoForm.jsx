@@ -21,6 +21,7 @@ const CreditoForm = ({ clienteId, login = 'sistema' }) => {
   const [etapa, setEtapa] = useState('lista'); // 'lista' | 'selecao' | 'preview'
   const [colaboradoresSelecionados, setColaboradoresSelecionados] = useState([]);
   const [taxaCliente, setTaxaCliente] = useState(0);
+  const [tipoTaxa, setTipoTaxa] = useState('D');
 
   const colaboradoresHook = useFetchColaboradores(clienteId);
   const creditoHook = useCredito(clienteId, login);
@@ -29,8 +30,14 @@ const CreditoForm = ({ clienteId, login = 'sistema' }) => {
   useEffect(() => {
     if (clienteId) {
       colaboradoresAPI.obterTaxa(clienteId)
-        .then(res => setTaxaCliente(res.data.data.taxa || 0))
-        .catch(() => setTaxaCliente(0));
+        .then(res => {
+          setTaxaCliente(res.data.data.taxa || 0);
+          setTipoTaxa(res.data.data.tipo === 'A' ? 'A' : 'D');
+        })
+        .catch(() => {
+          setTaxaCliente(0);
+          setTipoTaxa('D');
+        });
     }
   }, [clienteId]);
 
@@ -99,6 +106,7 @@ const CreditoForm = ({ clienteId, login = 'sistema' }) => {
           colaboradores={colaboradoresSelecionados}
           creditoHook={creditoHook}
           taxa={taxaCliente}
+          tipo={tipoTaxa}
           onVoltar={voltarParaSelecao}
           onSucesso={() => {
             voltarParaLista();

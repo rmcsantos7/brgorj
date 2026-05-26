@@ -143,11 +143,20 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
     return null;
   };
 
-  // Calcula líquido a partir do bruto e taxa
-  const calcularLiquido = (valorBruto, taxa) => {
+  // Valor que o colaborador recebe. No tipo 'A' (acréscimo) recebe o valor cheio;
+  // no 'D' (desconto) recebe bruto - taxa.
+  const calcularLiquido = (valorBruto, taxa, tipo) => {
     const bruto = parseFloat(valorBruto) || 0;
     const t = parseFloat(taxa) || 0;
-    if (t > 0) return Math.round((bruto - (bruto * t / 100)) * 100) / 100;
+    if (t > 0 && tipo !== 'A') return Math.round((bruto - (bruto * t / 100)) * 100) / 100;
+    return bruto;
+  };
+
+  // Valor do boleto (o que o restaurante paga). No tipo 'A' é bruto + taxa; no 'D' é o bruto.
+  const calcularBoleto = (valorBruto, taxa, tipo) => {
+    const bruto = parseFloat(valorBruto) || 0;
+    const t = parseFloat(taxa) || 0;
+    if (t > 0 && tipo === 'A') return Math.round((bruto + (bruto * t / 100)) * 100) / 100;
     return bruto;
   };
 
@@ -261,8 +270,10 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
               <tbody>
                 {recargasPagina.map((r) => {
                   const taxa = parseFloat(r.taxa) || 0;
+                  const tipo = r.tipo_taxa === 'A' ? 'A' : 'D';
                   const valorBruto = parseFloat(r.valor_bruto) || 0;
-                  const valorLiquido = calcularLiquido(valorBruto, taxa);
+                  const valorLiquido = calcularLiquido(valorBruto, taxa, tipo);
+                  const valorBoleto = calcularBoleto(valorBruto, taxa, tipo);
                   const boletoPago = ['paid', 'settled'].includes((r.boleto_status || '').toLowerCase());
                   const cancelada = r.status === 'C' && !boletoPago;
                   const comErro = r.status === 'E';
@@ -314,7 +325,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                         })()}
                       </td>
                       <td className="align-right" style={{ fontWeight: '500', color: 'var(--cinza-800)' }}>
-                        {formatarMoeda(valorBruto)}
+                        {formatarMoeda(valorBoleto)}
                       </td>
                       <td className="align-right" style={{ fontWeight: '700', color: '#491d4e', fontSize: '0.95rem' }}>
                         {formatarMoeda(valorLiquido)}
@@ -482,7 +493,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
             </p>
 
             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#4A1D4F', marginBottom: '20px' }}>
-              {formatarMoeda(qrCodeModal.valor_bruto)}
+              {formatarMoeda(calcularBoleto(qrCodeModal.valor_bruto, qrCodeModal.taxa, qrCodeModal.tipo_taxa === 'A' ? 'A' : 'D'))}
             </div>
 
             {qrCodeModal.nota_fiscal_id && (
@@ -576,7 +587,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
             </h3>
 
             <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '0.88rem' }}>
-              <strong>{cancelModal.restaurante}</strong> &middot; {formatarMoeda(cancelModal.valor_bruto)}
+              <strong>{cancelModal.restaurante}</strong> &middot; {formatarMoeda(calcularBoleto(cancelModal.valor_bruto, cancelModal.taxa, cancelModal.tipo_taxa === 'A' ? 'A' : 'D'))}
             </p>
 
             <p style={{ margin: '0 0 24px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>

@@ -148,8 +148,8 @@ const obterTaxaCliente = async (clienteId) => {
   if (!clienteId) throw new APIError('cliente_id é obrigatório', 400);
 
   try {
-    const taxa = await colaboradoresRepository.buscarTaxaCliente(clienteId);
-    return ok({ taxa });
+    const { taxa, tipo } = await colaboradoresRepository.buscarTaxaCliente(clienteId);
+    return ok({ taxa, tipo });
   } catch (error) {
     logger.error('Erro ao obter taxa do cliente:', { error: error.message });
     throw new APIError('Erro ao buscar taxa do cliente', 500);

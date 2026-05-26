@@ -140,7 +140,12 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
   if (!dados) return null;
 
   const taxa = dados.taxa || 0;
-  const totalDesconto = taxa > 0 ? Math.round((dados.valor_bruto - dados.valor_liquido) * 100) / 100 : 0;
+  // 'A' = acréscimo (restaurante paga a taxa por cima; boleto = bruto + taxa)
+  const isAcrescimo = dados.tipo_taxa === 'A';
+  const valorBoleto = dados.valor_boleto != null ? dados.valor_boleto : (dados.valor_bruto || 0);
+  const totalDesconto = dados.valor_taxa != null
+    ? dados.valor_taxa
+    : (taxa > 0 ? Math.round((dados.valor_bruto - dados.valor_liquido) * 100) / 100 : 0);
   const boletoPago = ['paid', 'settled'].includes((dados.boleto?.status || '').toLowerCase());
   // Se o boleto foi pago, o estado real é "pago" — mesmo que o status no DB esteja 'C'
   const remessaCancelada = dados.status === 'C' && !boletoPago;
@@ -299,10 +304,10 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
           borderRadius: '12px', padding: '18px 20px', textAlign: 'center'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--cinza-500)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
-            Valor Bruto
+            {isAcrescimo ? 'Colaboradores Recebem' : 'Valor Bruto'}
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--cinza-800)' }}>
-            {formatarMoeda(dados.valor_bruto)}
+            {formatarMoeda(isAcrescimo ? dados.valor_liquido : dados.valor_bruto)}
           </div>
         </div>
 
@@ -318,12 +323,12 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
               Tar. Conv. ({taxa}%)
             </div>
             <div style={{ fontSize: '1.4rem', fontWeight: '700', color: '#dc2626' }}>
-              - {formatarMoeda(totalDesconto)}
+              {isAcrescimo ? '+' : '-'} {formatarMoeda(totalDesconto)}
             </div>
           </div>
         )}
 
-        {/* Valor Líquido */}
+        {/* Valor Líquido (desconto) ou Valor do Boleto (acréscimo) */}
         <div style={{
           flex: 1, minWidth: '160px',
           background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
@@ -331,10 +336,10 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
           borderRadius: '12px', padding: '18px 20px', textAlign: 'center'
         }}>
           <div style={{ fontSize: '0.7rem', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
-            Valor Líquido
+            {isAcrescimo ? 'Valor do Boleto' : 'Valor Líquido'}
           </div>
           <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--roxo)' }}>
-            {formatarMoeda(dados.valor_liquido)}
+            {formatarMoeda(isAcrescimo ? valorBoleto : dados.valor_liquido)}
           </div>
         </div>
       </div>
@@ -350,9 +355,19 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
         color: 'var(--cinza-600)',
         lineHeight: '1.6'
       }}>
-        <strong>Valor Bruto:</strong> corresponde ao valor final apresentado no boleto. &nbsp;|&nbsp;
-        <strong>Tarifa Convênio:</strong> valor definido conforme acordo coletivo. &nbsp;|&nbsp;
-        <strong>Valor Líquido:</strong> valor que será distribuído entre os colaboradores.
+        {isAcrescimo ? (
+          <>
+            <strong>Valor distribuído:</strong> valor cheio que cada colaborador recebe. &nbsp;|&nbsp;
+            <strong>Tarifa Convênio:</strong> acréscimo pago pelo restaurante, conforme acordo coletivo. &nbsp;|&nbsp;
+            <strong>Valor do Boleto:</strong> valor bruto + tarifa, valor final a pagar.
+          </>
+        ) : (
+          <>
+            <strong>Valor Bruto:</strong> corresponde ao valor final apresentado no boleto. &nbsp;|&nbsp;
+            <strong>Tarifa Convênio:</strong> valor definido conforme acordo coletivo. &nbsp;|&nbsp;
+            <strong>Valor Líquido:</strong> valor que será distribuído entre os colaboradores.
+          </>
+        )}
       </div>
 
       {/* Tabela de Colaboradores */}
@@ -369,14 +384,14 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
               <th style={{ width: '40px' }}>#</th>
               <th>Nome</th>
               <th style={{ width: '140px' }}>CPF</th>
-              {taxa > 0 && (
+              {taxa > 0 && !isAcrescimo && (
                 <>
                   <th className="align-right" style={{ width: '120px' }}>Bruto</th>
                   <th className="align-right" style={{ width: '100px' }}>Tar. Conv.</th>
                 </>
               )}
               <th className="align-right" style={{ width: '130px' }}>
-                {taxa > 0 ? 'Líquido' : 'Valor'}
+                {taxa > 0 && !isAcrescimo ? 'Líquido' : 'Valor'}
               </th>
             </tr>
           </thead>
@@ -390,7 +405,7 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
                   <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--cinza-600)' }}>
                     {formatarCPF(colab.cpf)}
                   </td>
-                  {taxa > 0 && (
+                  {taxa > 0 && !isAcrescimo && (
                     <>
                       <td className="align-right" style={{ fontWeight: '500', color: 'var(--cinza-800)' }}>
                         {formatarMoeda(colab.valor_bruto)}
@@ -413,7 +428,7 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
               <td colSpan={taxa > 0 ? 3 : 3} style={{ textAlign: 'right', paddingRight: '12px', color: 'var(--cinza-600)', fontSize: '0.85rem' }}>
                 TOTAIS
               </td>
-              {taxa > 0 && (
+              {taxa > 0 && !isAcrescimo && (
                 <>
                   <td className="align-right" style={{ color: 'var(--cinza-800)' }}>
                     {formatarMoeda(dados.valor_bruto)}
@@ -523,7 +538,7 @@ const DetalheRecarga = ({ clienteId, remessaId, onVoltar }) => {
             </div>
 
             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#4A1D4F', marginBottom: '20px' }}>
-              {formatarMoeda(dados.valor_bruto)}
+              {formatarMoeda(valorBoleto)}
             </div>
 
             {/* QR Code Image */}

@@ -9,7 +9,10 @@ import { creditosAPI } from '../services/api';
 import { BoletoPdfLink, BoletoQrCode } from './BoletoMedia';
 import CurrencyInput from './CurrencyInput';
 
-const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVoltar, onSucesso, creditoHook, taxa = 0 }) => {
+const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVoltar, onSucesso, creditoHook, taxa = 0, tipo = 'D' }) => {
+  // 'A' = acréscimo (restaurante paga a taxa por cima; colaborador recebe o valor cheio)
+  // 'D' = desconto (taxa sai do colaborador; boleto = valor bruto)
+  const isAcrescimo = tipo === 'A';
   /**
    * Formata CPF com máscara 000.000.000-00
    */
@@ -57,7 +60,8 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
    */
   const calcularLiquido = (valorBruto) => {
     const v = parseFloat(valorBruto) || 0;
-    if (taxa > 0) {
+    // No acréscimo o colaborador recebe o valor cheio — a taxa vai para o boleto.
+    if (taxa > 0 && !isAcrescimo) {
       return Math.round((v - (v * taxa / 100)) * 100) / 100;
     }
     return v;
@@ -80,6 +84,8 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
   const totalBruto = colaboradores.reduce((acc, c) => acc + (parseFloat(c.valor) || 0), 0);
   const totalDesconto = colaboradores.reduce((acc, c) => acc + calcularDesconto(c.valor), 0);
   const totalLiquido = colaboradores.reduce((acc, c) => acc + calcularLiquido(c.valor), 0);
+  // Valor do boleto = o que o restaurante paga (acréscimo: bruto + taxa; desconto: bruto)
+  const totalBoleto = isAcrescimo ? Math.round((totalBruto + totalDesconto) * 100) / 100 : totalBruto;
 
   /**
    * Gera crédito
@@ -114,6 +120,7 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
         valor_bruto: totalBruto,
         valor_desconto: totalDesconto,
         valor_liquido: totalLiquido,
+        valor_boleto: totalBoleto,
         remessa_id: dados.remessa_id || null,
         nota_fiscal_id: dados.nota_fiscal_id || null,
         boleto: dados.boleto || null,
@@ -199,10 +206,10 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
 
             <div style={{ background: '#f3f4f6', borderRadius: '10px', padding: '16px 24px', minWidth: '120px' }}>
               <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Valor Bruto
+                {isAcrescimo ? 'Colaboradores Recebem' : 'Valor Bruto'}
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#374151' }}>
-                {sucesso.valor_bruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {(isAcrescimo ? sucesso.valor_liquido : sucesso.valor_bruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </div>
             </div>
 
@@ -212,17 +219,17 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
                   Tar. Conv. ({taxa}%)
                 </div>
                 <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#dc2626' }}>
-                  - {sucesso.valor_desconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  {isAcrescimo ? '+' : '-'} {sucesso.valor_desconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
               </div>
             )}
 
             <div style={{ background: '#f0fdf4', borderRadius: '10px', padding: '16px 24px', minWidth: '120px' }}>
               <div style={{ fontSize: '0.75rem', color: '#059669', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Valor Líquido
+                {isAcrescimo ? 'Valor do Boleto' : 'Valor Líquido'}
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#4A1D4F' }}>
-                {sucesso.valor_liquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {(isAcrescimo ? sucesso.valor_boleto : sucesso.valor_liquido).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </div>
             </div>
           </div>
@@ -409,7 +416,7 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
           fontSize: '0.85rem',
           color: '#92400e'
         }}>
-          Tarifa convênio aplicada: <strong>{taxa}%</strong>
+          Tarifa convênio ({isAcrescimo ? 'acréscimo no boleto' : 'desconto do colaborador'}): <strong>{taxa}%</strong>
         </div>
       )}
 
@@ -425,9 +432,19 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
           color: 'var(--cinza-600)',
           lineHeight: '1.6'
         }}>
-          <strong>Valor Bruto:</strong> corresponde ao valor final apresentado no boleto. &nbsp;|&nbsp;
-          <strong>Tarifa Convênio:</strong> valor definido conforme acordo coletivo. &nbsp;|&nbsp;
-          <strong>Valor Líquido:</strong> valor que será distribuído entre os colaboradores.
+          {isAcrescimo ? (
+            <>
+              <strong>Valor distribuído:</strong> valor cheio que cada colaborador recebe. &nbsp;|&nbsp;
+              <strong>Tarifa Convênio:</strong> acréscimo pago pelo restaurante, conforme acordo coletivo. &nbsp;|&nbsp;
+              <strong>Valor do Boleto:</strong> valor bruto + tarifa, valor final a pagar.
+            </>
+          ) : (
+            <>
+              <strong>Valor Bruto:</strong> corresponde ao valor final apresentado no boleto. &nbsp;|&nbsp;
+              <strong>Tarifa Convênio:</strong> valor definido conforme acordo coletivo. &nbsp;|&nbsp;
+              <strong>Valor Líquido:</strong> valor que será distribuído entre os colaboradores.
+            </>
+          )}
         </div>
       )}
 
@@ -509,8 +526,8 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
               <th style={{ width: '40px' }}>#</th>
               <th>Nome</th>
               <th>CPF</th>
-              <th className="align-right" style={{ width: '130px' }}>Valor Bruto</th>
-              {taxa > 0 && (
+              <th className="align-right" style={{ width: '130px' }}>{isAcrescimo ? 'Valor' : 'Valor Bruto'}</th>
+              {taxa > 0 && !isAcrescimo && (
                 <>
                   <th className="align-right" style={{ width: '110px' }}>Tar. Conv.</th>
                   <th className="align-right" style={{ width: '110px' }}>Líquido</th>
@@ -542,7 +559,7 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
                       }}
                     />
                   </td>
-                  {taxa > 0 && (
+                  {taxa > 0 && !isAcrescimo && (
                     <>
                       <td className="align-right" style={{ color: '#dc2626', fontSize: '0.85rem' }}>
                         {valorBruto > 0 ? `- ${desconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
@@ -582,23 +599,23 @@ const PreviewCredito = ({ clienteId, colaboradores: colaboradoresIniciais, onVol
             {taxa > 0 && (
               <>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Valor Total do Boleto</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{isAcrescimo ? 'Colaboradores Recebem' : 'Valor Total do Boleto'}</span>
                   <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#374151' }}>
-                    {totalBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(isAcrescimo ? totalLiquido : totalBruto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>Tar. Conv. ({taxa}%)</span>
                   <div style={{ fontSize: '1rem', fontWeight: '600', color: '#dc2626' }}>
-                    - {totalDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {isAcrescimo ? '+' : '-'} {totalDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </div>
                 </div>
               </>
             )}
             <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{taxa > 0 ? 'Valor Líquido' : 'Valor Total'}</span>
+              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{taxa > 0 ? (isAcrescimo ? 'Valor Total do Boleto' : 'Valor Líquido') : 'Valor Total'}</span>
               <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#4A1D4F' }}>
-                {totalLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {(isAcrescimo ? totalBoleto : totalLiquido).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </div>
             </div>
           </div>
