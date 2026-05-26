@@ -427,9 +427,35 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
       }
     }
 
-    const taxa = detalhes.length > 0 ? parseFloat(detalhes[0].taxa) || 0 : 0;
-    const tipoTaxa = detalhes.length > 0 && detalhes[0].tipo_taxa === 'A' ? 'A' : 'D';
-    const isAcrescimo = tipoTaxa === 'A';
+    const nf0 = detalhes[0] || {};
+
+    // Bruto = soma dos créditos (valor digitado por colaborador). Não depende do tipo.
+    const totalBruto = Math.round(detalhes.reduce((s, d) => s + (parseFloat(d.valor_bruto) || 0), 0) * 100) / 100;
+
+    // IMPORTANTE: a verdade do que foi cobrado está gravada na NOTA FISCAL no momento
+    // da geração (boleto, taxa e movimentação). Usamos esses valores para exibir — e
+    // inferimos o tipo a partir deles — para que uma remessa já gerada NÃO mude de
+    // valor na tela se o restaurante trocar de tipo/taxa depois. Só caímos no
+    // tipo/taxa atuais do cliente quando não há nota fiscal vinculada.
+    const temNota = nf0.nf_valor_boleto != null;
+    let valorBoleto, valorTaxa, totalLiquido, isAcrescimo, taxa;
+    if (temNota) {
+      valorBoleto = Math.round((parseFloat(nf0.nf_valor_boleto) || 0) * 100) / 100;
+      valorTaxa = Math.round((parseFloat(nf0.nf_valor_servico) || 0) * 100) / 100;
+      totalLiquido = Math.round((parseFloat(nf0.nf_valor_movimentacao) || 0) * 100) / 100;
+      // 'A' deixou o boleto acima do bruto (taxa por cima); 'D' deixou boleto = bruto.
+      isAcrescimo = valorBoleto > totalBruto + 0.005;
+      // % derivada do que foi efetivamente cobrado (a NF guarda o valor, não a alíquota).
+      taxa = totalBruto > 0 ? Math.round(valorTaxa / totalBruto * 100 * 100) / 100 : 0;
+    } else {
+      isAcrescimo = nf0.tipo_taxa === 'A';
+      taxa = parseFloat(nf0.taxa) || 0;
+      valorTaxa = Math.round(totalBruto * taxa / 100 * 100) / 100;
+      totalLiquido = isAcrescimo ? totalBruto : Math.round((totalBruto - valorTaxa) * 100) / 100;
+      valorBoleto = isAcrescimo ? Math.round((totalBruto + valorTaxa) * 100) / 100 : totalBruto;
+    }
+    const tipoTaxa = isAcrescimo ? 'A' : 'D';
+
     const meta = detalhes.length > 0 ? {
       criado_por: detalhes[0].criado_por,
       data_criacao: detalhes[0].data_criacao,
@@ -450,15 +476,12 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
       status: detalhes[0].boleto_status
     } : null;
 
-    // Valor gravado por colaborador (crd_usu_valor) = valor digitado na recarga.
-    // Líquido = o que o colaborador efetivamente recebe:
-    //  - tipo 'A' (acréscimo): recebe o valor cheio (taxa é paga pelo restaurante);
-    //  - tipo 'D' (desconto): recebe bruto - taxa.
+    // Líquido por colaborador, proporcional à movimentação total (cobre A e D):
+    // fator = movimentação/bruto → em 'A' = 1 (recebe cheio); em 'D' = 1 - taxa%.
+    const fatorLiquido = totalBruto > 0 ? totalLiquido / totalBruto : 1;
     const colaboradores = detalhes.map(d => {
       const valorBruto = parseFloat(d.valor_bruto) || 0;
-      const valorLiquido = (taxa > 0 && !isAcrescimo)
-        ? Math.round((valorBruto - (valorBruto * taxa / 100)) * 100) / 100
-        : valorBruto;
+      const valorLiquido = Math.round(valorBruto * fatorLiquido * 100) / 100;
       return {
         credito_id: d.credito_id,
         colaborador_id: d.colaborador_id,
@@ -469,19 +492,6 @@ const obterDetalheRemessa = async (remessaId, clienteId) => {
         data_credito: d.data_credito
       };
     });
-
-    const totalBruto = Math.round(colaboradores.reduce((s, c) => s + c.valor_bruto, 0) * 100) / 100;
-    const totalLiquido = Math.round(colaboradores.reduce((s, c) => s + c.valor_liquido, 0) * 100) / 100;
-
-    // Valor da taxa e valor do boleto (o que o restaurante paga):
-    //  - 'A': boleto = bruto + taxa; colaboradores recebem o bruto.
-    //  - 'D': boleto = bruto;        colaboradores recebem bruto - taxa.
-    const valorTaxa = isAcrescimo
-      ? Math.round(totalBruto * taxa / 100 * 100) / 100
-      : Math.round((totalBruto - totalLiquido) * 100) / 100;
-    const valorBoleto = isAcrescimo
-      ? Math.round((totalBruto + valorTaxa) * 100) / 100
-      : totalBruto;
 
     return ok({
       remessa_id: remessaId,

@@ -269,11 +269,18 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
               </thead>
               <tbody>
                 {recargasPagina.map((r) => {
-                  const taxa = parseFloat(r.taxa) || 0;
+                  const taxaAtual = parseFloat(r.taxa) || 0;
                   const tipo = r.tipo_taxa === 'A' ? 'A' : 'D';
                   const valorBruto = parseFloat(r.valor_bruto) || 0;
-                  const valorLiquido = calcularLiquido(valorBruto, taxa, tipo);
-                  const valorBoleto = calcularBoleto(valorBruto, taxa, tipo);
+                  // Verdade histórica vem da nota fiscal; só calcula pelo tipo/taxa
+                  // atuais quando a remessa não tem nota vinculada. Assim o valor não
+                  // muda na tela se o restaurante trocar de tipo depois.
+                  const temNota = r.nf_valor_boleto != null;
+                  const valorBoleto = temNota ? (parseFloat(r.nf_valor_boleto) || 0) : calcularBoleto(valorBruto, taxaAtual, tipo);
+                  const valorLiquido = temNota ? (parseFloat(r.nf_valor_movimentacao) || 0) : calcularLiquido(valorBruto, taxaAtual, tipo);
+                  const taxaPct = temNota
+                    ? (valorBruto > 0 ? Math.round((valorBoleto - valorLiquido) / valorBruto * 100 * 100) / 100 : 0)
+                    : taxaAtual;
                   const boletoPago = ['paid', 'settled'].includes((r.boleto_status || '').toLowerCase());
                   const cancelada = r.status === 'C' && !boletoPago;
                   const comErro = r.status === 'E';
@@ -330,8 +337,8 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
                       <td className="align-right" style={{ fontWeight: '700', color: '#491d4e', fontSize: '0.95rem' }}>
                         {formatarMoeda(valorLiquido)}
                       </td>
-                      <td className="align-right" style={{ fontSize: '0.8rem', color: taxa > 0 ? 'var(--erro)' : 'var(--cinza-500)' }}>
-                        {taxa > 0 ? `${taxa}%` : '-'}
+                      <td className="align-right" style={{ fontSize: '0.8rem', color: taxaPct > 0 ? 'var(--erro)' : 'var(--cinza-500)' }}>
+                        {taxaPct > 0 ? `${taxaPct}%` : '-'}
                       </td>
                       <td style={{ fontWeight: '500' }}>{r.restaurante || '-'}</td>
                       <td style={{ fontSize: '0.85rem', color: 'var(--cinza-600)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -493,7 +500,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
             </p>
 
             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#4A1D4F', marginBottom: '20px' }}>
-              {formatarMoeda(calcularBoleto(qrCodeModal.valor_bruto, qrCodeModal.taxa, qrCodeModal.tipo_taxa === 'A' ? 'A' : 'D'))}
+              {formatarMoeda(qrCodeModal.nf_valor_boleto != null ? (parseFloat(qrCodeModal.nf_valor_boleto) || 0) : calcularBoleto(qrCodeModal.valor_bruto, qrCodeModal.taxa, qrCodeModal.tipo_taxa === 'A' ? 'A' : 'D'))}
             </div>
 
             {qrCodeModal.nota_fiscal_id && (
@@ -587,7 +594,7 @@ const ListaRecargas = ({ clienteId, onNovaRecarga }) => {
             </h3>
 
             <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '0.88rem' }}>
-              <strong>{cancelModal.restaurante}</strong> &middot; {formatarMoeda(calcularBoleto(cancelModal.valor_bruto, cancelModal.taxa, cancelModal.tipo_taxa === 'A' ? 'A' : 'D'))}
+              <strong>{cancelModal.restaurante}</strong> &middot; {formatarMoeda(cancelModal.nf_valor_boleto != null ? (parseFloat(cancelModal.nf_valor_boleto) || 0) : calcularBoleto(cancelModal.valor_bruto, cancelModal.taxa, cancelModal.tipo_taxa === 'A' ? 'A' : 'D'))}
             </p>
 
             <p style={{ margin: '0 0 24px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>
