@@ -117,8 +117,8 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
       COUNT(c.crd_usucre_id) AS total_colaboradores,
       COALESCE(SUM(c.crd_usu_valor), 0) AS valor_bruto,
       nf.crd_not_id AS nota_fiscal_id,
-      nf.crd_not_valor_nota_fiscal AS nf_valor_boleto,
-      nf.crd_not_valor_movimentacao AS nf_valor_movimentacao,
+      MAX(nfh.crd_not_valor_nota_fiscal) AS nf_valor_boleto,
+      MAX(nfh.crd_not_valor_movimentacao) AS nf_valor_movimentacao,
       nf.crd_not_boleto_status AS boleto_status,
       nf.crd_not_qr_code AS boleto_pix_qrcode,
       nf.crd_not_linha_digitavel_boleto AS boleto_linha_digitavel
@@ -128,6 +128,8 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
     LEFT JOIN crd_nota_fiscal nf
       ON nf.crd_not_id = c.crd_not_id
       AND nf.crd_not_situacao IS DISTINCT FROM 'C'
+    LEFT JOIN crd_nota_fiscal nfh
+      ON nfh.crd_not_id = c.crd_not_id
     WHERE r.crd_cli_id = $1
   `;
 
@@ -147,7 +149,7 @@ const buscarHistorico = async (clienteId, limit = 50, offset = 0, dataInicio = n
   }
 
   sql += `
-    GROUP BY r.crd_usucrerem_id, r.crd_usu_data_import, r.crd_usu_login, r.crd_rem_status, cli.crd_cli_nome_fantasia, cli.crd_cli_manutencao_usuario, cli.crd_cli_tipo_taxa, r.crd_usucrerem_titulo, nf.crd_not_id, nf.crd_not_valor_nota_fiscal, nf.crd_not_valor_movimentacao, nf.crd_not_boleto_status, nf.crd_not_qr_code, nf.crd_not_linha_digitavel_boleto
+    GROUP BY r.crd_usucrerem_id, r.crd_usu_data_import, r.crd_usu_login, r.crd_rem_status, cli.crd_cli_nome_fantasia, cli.crd_cli_manutencao_usuario, cli.crd_cli_tipo_taxa, r.crd_usucrerem_titulo, nf.crd_not_id, nf.crd_not_boleto_status, nf.crd_not_qr_code, nf.crd_not_linha_digitavel_boleto
     ORDER BY r.crd_usucrerem_id DESC
     LIMIT $${paramCount} OFFSET $${paramCount + 1}
   `;
@@ -217,9 +219,9 @@ const buscarDetalheRemessa = async (remessaId, clienteId) => {
       cli.crd_cli_nome_fantasia AS restaurante,
       r.crd_usucrerem_titulo AS titulo,
       nf.crd_not_id AS nota_fiscal_id,
-      nf.crd_not_valor_nota_fiscal AS nf_valor_boleto,
-      nf.crd_not_valor_servico AS nf_valor_servico,
-      nf.crd_not_valor_movimentacao AS nf_valor_movimentacao,
+      nfh.crd_not_valor_nota_fiscal AS nf_valor_boleto,
+      nfh.crd_not_valor_servico AS nf_valor_servico,
+      nfh.crd_not_valor_movimentacao AS nf_valor_movimentacao,
       nf.crd_not_charge_id AS boleto_charge_id,
       nf.crd_not_codigo_barras AS boleto_codigo_barras,
       nf.crd_not_linha_digitavel_boleto AS boleto_linha_digitavel,
@@ -234,6 +236,8 @@ const buscarDetalheRemessa = async (remessaId, clienteId) => {
     LEFT JOIN crd_nota_fiscal nf
       ON nf.crd_not_id = c.crd_not_id
       AND nf.crd_not_situacao IS DISTINCT FROM 'C'
+    LEFT JOIN crd_nota_fiscal nfh
+      ON nfh.crd_not_id = c.crd_not_id
     WHERE c.crd_usucrerem_id = $1
       AND c.crd_cli_id = $2
     ORDER BY u.crd_usr_nome ASC
