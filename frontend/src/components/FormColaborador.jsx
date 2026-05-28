@@ -1,7 +1,6 @@
 /**
  * FormColaborador
  * Formulário de cadastro/edição de colaborador
- * Tabs: Cadastro, Financeiro, Histórico
  * Visual alinhado com DetalheRecarga/ListaRecargas
  */
 
@@ -12,7 +11,6 @@ const FormColaborador = ({ clienteId, colaboradorId, login, onVoltar }) => {
   const isNovo = !colaboradorId;
 
   const [editando, setEditando] = useState(isNovo);
-  const [tabAtiva, setTabAtiva] = useState('cadastro');
   const [loading, setLoading] = useState(!isNovo);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -331,32 +329,7 @@ const FormColaborador = ({ clienteId, colaboradorId, login, onVoltar }) => {
       {erro && <div className="alert alert-erro" style={{ marginBottom: '10px', padding: '8px 12px', fontSize: '0.82rem' }}>{erro}</div>}
       {sucesso && <div className="alert alert-sucesso" style={{ marginBottom: '10px', padding: '8px 12px', fontSize: '0.82rem' }}>{sucesso}</div>}
 
-      {/* Tabs */}
-      <div style={{
-        display: 'flex', gap: '0', marginBottom: '14px',
-        borderBottom: '2px solid var(--cinza-300)'
-      }}>
-        {(isNovo ? ['cadastro'] : ['cadastro', 'financeiro', 'historico']).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setTabAtiva(tab)}
-            style={{
-              padding: '7px 18px', background: 'transparent',
-              border: 'none', borderBottom: `2px solid ${tabAtiva === tab ? 'var(--rosa)' : 'transparent'}`,
-              marginBottom: '-2px', cursor: 'pointer',
-              fontSize: '0.82rem', fontWeight: '600',
-              color: tabAtiva === tab ? 'var(--rosa)' : 'var(--cinza-600)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {tab === 'cadastro' ? 'Cadastro' : tab === 'financeiro' ? 'Financeiro' : 'Histórico'}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Cadastro */}
-      {tabAtiva === 'cadastro' && (
-        <div>
+      <div>
           {/* Informações Pessoais */}
           <div className="section-card">
             <h4 className="section-title">Informações Pessoais</h4>
@@ -528,41 +501,6 @@ const FormColaborador = ({ clienteId, colaboradorId, login, onVoltar }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Tab Financeiro */}
-      {tabAtiva === 'financeiro' && (
-        <div style={{
-          textAlign: 'center', padding: '40px 20px',
-          background: 'var(--cinza-100)', borderRadius: '8px',
-          border: '1px solid var(--cinza-300)'
-        }}>
-          <div style={{ fontSize: '2rem', marginBottom: '8px', opacity: 0.4 }}>💰</div>
-          <p style={{ margin: '0 0 4px', fontWeight: '600', color: 'var(--cinza-800)', fontSize: '0.88rem' }}>
-            Dados financeiros do colaborador
-          </p>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--cinza-600)' }}>
-            Em desenvolvimento
-          </p>
-        </div>
-      )}
-
-      {/* Tab Histórico */}
-      {tabAtiva === 'historico' && (
-        <div style={{
-          textAlign: 'center', padding: '40px 20px',
-          background: 'var(--cinza-100)', borderRadius: '8px',
-          border: '1px solid var(--cinza-300)'
-        }}>
-          <div style={{ fontSize: '2rem', marginBottom: '8px', opacity: 0.4 }}>📋</div>
-          <p style={{ margin: '0 0 4px', fontWeight: '600', color: 'var(--cinza-800)', fontSize: '0.88rem' }}>
-            Histórico de créditos do colaborador
-          </p>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--cinza-600)' }}>
-            Em desenvolvimento
-          </p>
-        </div>
-      )}
     </div>
   );
 };
