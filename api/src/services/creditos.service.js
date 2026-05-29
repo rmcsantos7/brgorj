@@ -26,6 +26,15 @@ const db = require('../config/database');
 const STATUS_FINAIS_BOLETO = ['paid', 'settled', 'canceled', 'cancelled', 'expired'];
 
 /**
+ * Tempo máximo (ms) que esperamos o Hub-BaaS/EFI responder ao gerar um boleto.
+ * A EFI pode demorar bem mais que uma requisição comum, então damos uma folga
+ * generosa — mas limitada, para não deixar a requisição pendurada para sempre se
+ * a EFI travar. O timeout do front (api.js) é maior que este, para que o usuário
+ * receba a resposta controlada do backend em vez de um abort do axios.
+ */
+const TIMEOUT_BOLETO_EFI_MS = 90000;
+
+/**
  * Consulta a EFI e atualiza o status local do boleto se mudou. Usado ao abrir
  * o detalhe para garantir que o badge ("Pago"/"Cancelado"/"Aguardando") reflita
  * a situação real — sem isso, um pagamento que aconteceu após o cancelamento
@@ -89,7 +98,8 @@ const chamarApiBoleto = async (notaFiscalId) => {
     const boletoResponse = await fetch(boletoUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ com_juros: false })
+      body: JSON.stringify({ com_juros: false }),
+      signal: AbortSignal.timeout(TIMEOUT_BOLETO_EFI_MS)
     });
     const boletoResult = await boletoResponse.json().catch(() => null);
 
@@ -99,12 +109,73 @@ const chamarApiBoleto = async (notaFiscalId) => {
       return { boleto, erro: null };
     }
 
-    const erro = boletoResult?.error || boletoResult?.message || `HTTP ${boletoResponse.status}`;
+    // Hub-BaaS aninha o erro da EFI em `efi`. Prefere a descrição da EFI (com o
+    // código) — assim o usuário vê a causa real (ex.: "limite operacional excedido")
+    // em vez do genérico "Falha ao gerar boleto na EFI".
+    const efiDesc = boletoResult?.efi?.error_description;
+    const efiCode = boletoResult?.efi?.code;
+    const erro = efiDesc
+      ? (efiCode ? `EFI ${efiCode}: ${efiDesc}` : efiDesc)
+      : (boletoResult?.error || boletoResult?.message || `HTTP ${boletoResponse.status}`);
     logger.warn('API de boleto retornou erro:', { notaFiscalId, status: boletoResponse.status, boletoResult });
     return { boleto: null, erro };
   } catch (err) {
-    logger.error('Falha ao chamar API de boleto:', { notaFiscalId, error: err.message });
-    return { boleto: null, erro: err.message || 'Falha de comunicação com o serviço de boleto' };
+    // AbortSignal.timeout dispara TimeoutError; sinaliza claramente que a EFI demorou
+    // demais (e não que a recarga falhou — o boleto pode ainda ser emitido depois).
+    const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
+    const erro = timedOut
+      ? 'A EFI não respondeu a tempo. O boleto pode demorar a aparecer; tente reemitir em instantes.'
+      : (err.message || 'Falha de comunicação com o serviço de boleto');
+    logger.error('Falha ao chamar API de boleto:', { notaFiscalId, error: err.message, timedOut });
+    return { boleto: null, erro };
+  }
+};
+
+/**
+ * Consulta (GET) se a EFI já tem um boleto emitido para a nota e devolve as infos
+ * já normalizadas no formato que `atualizarNotaComBoleto` espera (ou null se não há).
+ *
+ * Usado na reemissão: se a geração estourou o timeout mas a EFI criou o boleto,
+ * nosso banco fica sem o charge_id. Antes de gerar de novo (o que duplicaria a
+ * cobrança), conferimos a EFI — se já existe, só atualizamos as infos.
+ *
+ * O GET tem um formato diferente do POST: os dados do boleto vêm aninhados em
+ * `data.payment.banking_billet`, então é preciso remapear.
+ */
+const consultarBoletoEfi = async (notaFiscalId) => {
+  if (!notaFiscalId) return null;
+  try {
+    const baseUrl = process.env.BASE_URL_HUB_BAAS || 'http://localhost:5003';
+    const idOperacao = process.env.HUB_BAAS_ID_OPERACAO || 'BOLETO_EFI';
+    const token = process.env.HUB_BAAS_TOKEN || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const url = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscalId}`;
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_BOLETO_EFI_MS) });
+    if (!response.ok) return null; // 404 = nenhum boleto emitido ainda
+
+    const json = await response.json().catch(() => null);
+    const d = json?.data;
+    if (!d || !d.charge_id) return null;
+
+    const bb = d.payment?.banking_billet || {};
+    const barcode = bb.barcode || null;
+    return {
+      charge_id: d.charge_id,
+      status: d.status,
+      // O GET só traz `barcode` (linha digitável formatada); o código de barras é
+      // a mesma sequência sem os separadores.
+      linha_digitavel: barcode,
+      codigo_barras: barcode ? barcode.replace(/\D/g, '') : null,
+      pix: { qrcode: bb.pix?.qrcode || null },
+      // No GET, `pdf` vem como objeto { charge: 'url' } (diferente do POST, que traz
+      // links.pdf_url direto). Extrai a URL; cai para billet_link se faltar.
+      links: { pdf_url: bb.pdf?.charge || bb.billet_link || null, qrcode_image_url: null }
+    };
+  } catch (err) {
+    logger.warn('Falha ao consultar boleto existente na EFI:', { notaFiscalId, error: err.message });
+    return null;
   }
 };
 
@@ -651,6 +722,46 @@ const reemitirBoleto = async (remessaId, clienteId) => {
   const notaFiscal = await creditosRepository.buscarNotaFiscalPorRemessa(remessaId, clienteId);
   if (!notaFiscal || !notaFiscal.nota_fiscal_id) {
     throw new APIError('Nota fiscal não encontrada para esta remessa', 404);
+  }
+
+  // Idempotência (1): se já temos o charge_id no nosso banco, NÃO chama a EFI de novo
+  // — cada POST registra uma cobrança nova, então um segundo clique duplicaria o
+  // boleto. Apenas limpa o status de erro e devolve o boleto existente.
+  if (notaFiscal.charge_id) {
+    await creditosRepository.atualizarStatusRemessa(remessaId, clienteId, null).catch(() => {});
+    return ok({
+      remessa_id: remessaId,
+      nota_fiscal_id: notaFiscal.nota_fiscal_id,
+      boleto: {
+        charge_id: notaFiscal.charge_id,
+        status: notaFiscal.boleto_status
+      }
+    }, 'Boleto já estava gerado');
+  }
+
+  // Idempotência (2): nosso banco não tem o charge_id, mas a EFI pode já ter gerado o
+  // boleto (ex.: a emissão estourou o timeout e o retorno se perdeu). Antes de gerar
+  // outro, conferimos a EFI — se já existe, só atualizamos as infos, sem duplicar.
+  const boletoExistente = await consultarBoletoEfi(notaFiscal.nota_fiscal_id);
+  if (boletoExistente) {
+    await creditosRepository.atualizarNotaComBoleto(notaFiscal.nota_fiscal_id, boletoExistente).catch(() => {});
+    await creditosRepository.atualizarStatusRemessa(remessaId, clienteId, null).catch(() => {});
+    logger.info('Boleto recuperado da EFI na reemissão (sem nova cobrança):', {
+      remessaId, notaFiscalId: notaFiscal.nota_fiscal_id, chargeId: boletoExistente.charge_id
+    });
+    return ok({
+      remessa_id: remessaId,
+      nota_fiscal_id: notaFiscal.nota_fiscal_id,
+      boleto: {
+        charge_id: boletoExistente.charge_id,
+        status: boletoExistente.status,
+        codigo_barras: boletoExistente.codigo_barras,
+        linha_digitavel: boletoExistente.linha_digitavel,
+        pix_qrcode: boletoExistente.pix?.qrcode || null,
+        pdf_url: boletoExistente.links?.pdf_url || null,
+        qrcode_image_url: boletoExistente.links?.qrcode_image_url || null
+      }
+    }, 'Boleto recuperado da EFI');
   }
 
   const { boleto, erro } = await chamarApiBoleto(notaFiscal.nota_fiscal_id);

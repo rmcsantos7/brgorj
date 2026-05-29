@@ -88,8 +88,12 @@ export const colaboradoresAPI = {
  */
 export const creditosAPI = {
   gerar: (clienteId, payload, login = 'sistema') => {
+    // Emissão aguarda a EFI gerar o boleto — pode passar dos 30s padrão. Damos uma
+    // folga maior que o timeout do backend (90s) para esperar o retorno real da EFI
+    // em vez de o axios abortar antes da hora.
     return api.post('/creditos/gerar', payload, {
-      params: { cliente_id: clienteId, login }
+      params: { cliente_id: clienteId, login },
+      timeout: 120000
     });
   },
   obterHistorico: (clienteId, params = {}) => {
@@ -108,8 +112,10 @@ export const creditosAPI = {
     });
   },
   reemitirBoleto: (clienteId, remessaId) => {
+    // Reemissão também aguarda a EFI — mesma folga de timeout da geração.
     return api.post(`/creditos/remessa/${remessaId}/boleto`, null, {
-      params: { cliente_id: clienteId }
+      params: { cliente_id: clienteId },
+      timeout: 120000
     });
   },
   // Boleto PDF e QR Code via hub-bass — exigem JWT, então não dá pra usar
