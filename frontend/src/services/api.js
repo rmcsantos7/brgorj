@@ -107,8 +107,11 @@ export const creditosAPI = {
     });
   },
   cancelarRemessa: (clienteId, remessaId, login = 'sistema') => {
+    // Cancelamento confirma o status do boleto na EFI (e pode cancelá-lo lá) antes de
+    // excluir — pode passar dos 30s padrão. Folga maior que o timeout do backend (90s).
     return api.delete(`/creditos/remessa/${remessaId}`, {
-      params: { cliente_id: clienteId, login }
+      params: { cliente_id: clienteId, login },
+      timeout: 120000
     });
   },
   reemitirBoleto: (clienteId, remessaId) => {

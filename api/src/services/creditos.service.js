@@ -610,6 +610,7 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
 
   let boletoStatus = null;
   let boletoStatusConsultado = false;
+  let boletoInexistente = false;
   let boletoCancelado = false;
 
   // 2. Se tem nota com boleto, verifica status no EFI
@@ -619,13 +620,21 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
   if (notaFiscal && notaFiscal.nota_fiscal_id) {
     try {
       const statusUrl = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscal.nota_fiscal_id}`;
-      const statusResponse = await fetch(statusUrl, { headers });
-      const statusResult = await statusResponse.json();
+      const statusResponse = await fetch(statusUrl, { headers, signal: AbortSignal.timeout(TIMEOUT_BOLETO_EFI_MS) });
+      const statusResult = await statusResponse.json().catch(() => null);
 
       if (statusResponse.ok && statusResult?.data?.status) {
         boletoStatus = statusResult.data.status;
         boletoStatusConsultado = true;
         logger.info('Status do boleto consultado:', { notaId: notaFiscal.nota_fiscal_id, status: boletoStatus });
+      } else if (statusResponse.status === 404) {
+        // 404 = a EFI confirma que NÃO existe boleto emitido para esta nota (caso
+        // típico de remessa que ficou em "Erro no boleto" e nunca chegou a gerar).
+        // É uma resposta definitiva: sem boleto, não há o que confirmar nem cancelar
+        // na EFI, então o cancelamento da remessa é seguro.
+        boletoInexistente = true;
+        boletoStatusConsultado = true;
+        logger.info('Nenhum boleto na EFI para a nota — cancelamento liberado:', { notaId: notaFiscal.nota_fiscal_id });
       }
     } catch (err) {
       logger.warn('Erro ao consultar status do boleto:', { error: err.message });
@@ -643,12 +652,13 @@ const cancelarRemessa = async (remessaId, clienteId, canceladoPor = null) => {
     }
 
     // 3. Se boleto está aberto (waiting/active), cancela na API EFI
-    if (boletoStatus === 'waiting' || boletoStatus === 'active') {
+    if (!boletoInexistente && (boletoStatus === 'waiting' || boletoStatus === 'active')) {
       try {
         const cancelUrl = `${baseUrl}/efi/V1/boleto/${idOperacao}/${notaFiscal.nota_fiscal_id}/cancel`;
         const cancelResponse = await fetch(cancelUrl, {
           method: 'PUT',
-          headers
+          headers,
+          signal: AbortSignal.timeout(TIMEOUT_BOLETO_EFI_MS)
         });
         const cancelResult = await cancelResponse.json().catch(() => null);
         boletoCancelado = cancelResponse.ok;
